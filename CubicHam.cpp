@@ -146,7 +146,17 @@ void remove(int v, int w){
 
 }
 
-void now_degree_two(int v){}
+void now_degree_two(int v){
+    // changing G caused v's degree to become two
+    degree_two.push_back(v);
+
+    std::function<bool()> not_degree_two = [v]{
+        degree_two.pop_back();
+        return false;
+    };
+    actions.push_back(not_degree_two);
+}
+
 bool safely_remove(int u, int w){return false;}
 bool remove_third_leg(int v){return false;}
 bool force(int v, int w){return false;}
