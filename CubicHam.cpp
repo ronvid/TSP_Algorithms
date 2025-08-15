@@ -130,15 +130,29 @@ void remove(int v, int w){
     G[v].erase(w);
     G[w].erase(v);
     bool was_forced = forced_in_current[v].contains(w);
+    if (was_forced){
+        forced_in_current[v].erase(w);
+        forced_in_current[w].erase(v);
+    }
 
-};
-void now_degree_two(int v){};
-bool safely_remove(int u, int w){return false;};
-bool remove_third_leg(int v){return false;};
-bool force(int v, int w){return false;};
-bool force_into_triangle(int v, int w){return false;};
-bool contract(int v){return false;}; // NOTE returns false instead of none
-bool handle_degree_two(){return false;};
+    std::function<bool()> unremove = [v, w, was_original, was_forced]{
+        G[v][w] = G[w][v] = was_original;
+        if(was_forced){
+            forced_in_current[v][w] = forced_in_current[w][v] = true;
+        }
+        return false;
+    };
+    actions.push_back(unremove);
+
+}
+
+void now_degree_two(int v){}
+bool safely_remove(int u, int w){return false;}
+bool remove_third_leg(int v){return false;}
+bool force(int v, int w){return false;}
+bool force_into_triangle(int v, int w){return false;}
+bool contract(int v){return false;} // NOTE returns false instead of none
+bool handle_degree_two(){return false;}
 
 int get_unforced_neighbour(int v){ // TODO check if this functions is even neccassary
     // returns an unforced neighbour to v
