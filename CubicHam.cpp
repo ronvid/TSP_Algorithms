@@ -157,7 +157,18 @@ void now_degree_two(int v){
     actions.push_back(not_degree_two);
 }
 
-bool safely_remove(int u, int w){return false;}
+bool safely_remove(int v, int w){
+    // remove edge v-w and update degree data list
+    // return true if successful, otherwise false
+    if(forced_in_current[v].contains(w) || G[v].size() < 3 || G[w] < 3){
+        return false;
+    }
+    remove(v,w);
+    now_degree_two(v);
+    now_degree_two(w);
+    return true;
+}
+
 bool remove_third_leg(int v){return false;}
 bool force(int v, int w){return false;}
 bool force_into_triangle(int v, int w){return false;}
