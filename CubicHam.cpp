@@ -2,6 +2,7 @@
 #include <set>
 #include <vector>
 #include <functional>
+#include <climits>
 #include <iostream> //TODO debug only ig
 
 /**
@@ -29,6 +30,14 @@ void print_graph(std::map<int, std::map<int, bool>>* G);
 
 // a copy of the given graph to run the algorithm on
 std::map<int, std::map<int, bool>> G;
+
+// a copy of the given weights to run the algorithm on
+std::map<int, std::map<int, int>> W;
+
+// keeps track of the weight of the current forced edges
+int current_weight = 0;
+// the weight of the current best weight graph
+int min_found_weight = INT_MAX;
 
 // a subgraph of forced edges in original G
 std::map<int, std::map<int, bool>> forced_in_input;
@@ -88,9 +97,11 @@ std::function<bool()> main_ch = []{
 };
 
 
-bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input){
+bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input,
+                              std::map<int, std::map<int, int>>* input_weights){
 
     // copy all values from the input graph to the graph used by the algorithm
+    // copy weights from input weight graph
     // add all degree two vertices to the degree_two set
     // check for any isolated/degree one vertices
     for(const auto& [v, e] : *input){
@@ -104,6 +115,8 @@ bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input){
         for(const auto& [w, og] : e){
             // create edges in copy graph
             G[v][w] = true;
+            // add weights to weight graph
+            W[v][w] = (*input_weights)[v][w];
         }
 
         // inivtialize vertices in forced_in_input/current graphs
@@ -113,6 +126,8 @@ bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input){
 
     actions.push_back(main_ch);
 
+    bool cycle_found = false; // was a cycle found?
+
     // the main backtracing loop
     std::function<bool()> a;
     while(actions.size() > 0){
@@ -120,16 +135,23 @@ bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input){
         actions.pop_back();
         if(a()){
             // hamiltonian cycle found
-            // TODO do stuff with found ham cycle
             std::cout << "found cycle :D" << std::endl;
+            cycle_found = true;
             print_graph(&forced_in_input);
+            std::cout << "Cost: " << current_weight << std::endl;
+            // check if the found cycle has smaller cost than the best previous cycle
+            if(current_weight < min_found_weight){
+                min_found_weight = current_weight;
+                //TODO save found cycle
+            }
         }
     }
 
-    return true; // TODO remove ig
+    // TODO return a copy of the best found graph
+    std::cout << "Smallest Graph cost: " << min_found_weight << std::endl;
+    return cycle_found;
 }
 
-// TODO all of this is TMP
 void remove(int v, int w){
     // removes edge v-w from G
     bool was_original = G[v][w];
@@ -141,12 +163,19 @@ void remove(int v, int w){
         forced_in_current[w].erase(v);
     }
 
-    std::function<bool()> unremove = [v, w, was_original, was_forced]{
+    // remove weights
+    int weight = W[v][w];
+    W[v].erase(w);
+    W[w].erase(v);
+
+    std::function<bool()> unremove = [v, w, was_original, was_forced, weight]{
         std::cout << "action: unremove" << std::endl;
         G[v][w] = G[w][v] = was_original;
         if(was_forced){
             forced_in_current[v][w] = forced_in_current[w][v] = true;
         }
+        // add weights back
+        W[v][w] = W[w][v] = weight;
         return false;
     };
     actions.push_back(unremove);
@@ -211,7 +240,11 @@ bool force(int v, int w){
         forced_in_input[v][w] = forced_in_input[w][v] = true;
     }
 
-    std::function<bool()> unforce = [v, w, was_original, v_not_previously_forced, w_not_previously_forced]{
+    // add weight
+    int weight = W[v][w];
+    current_weight += weight;
+
+    std::function<bool()> unforce = [v, w, was_original, v_not_previously_forced, w_not_previously_forced, weight]{
         std::cout << "action: unforce" << std::endl;
         if(v_not_previously_forced) forced_vertices.erase(v);
         if(w_not_previously_forced) forced_vertices.erase(w);
@@ -222,6 +255,9 @@ bool force(int v, int w){
             forced_in_input[v].erase(w);
             forced_in_input[w].erase(v);
         }
+        // remove weight
+        current_weight -= weight;
+
         return false;
     };
     actions.push_back(unforce);
@@ -277,12 +313,18 @@ bool contract(int v){
     if(!force(u,v) | !force(v,w)){
         return false;
     }
+    int new_weight = W[v][u] + W[v][w]; // get weight of contracted edges
+
     remove(u,v);
     remove(v,w);
     G[u][w] = G[w][u] = false;
     forced_in_current[u][w] = forced_in_current[w][u] = true;
     G.erase(v);
     forced_vertices.erase(v);
+
+    // change weights
+    W[u][w] = W[w][u] = new_weight;
+    W.erase(v);
 
     std::function<bool()> uncontract = [v, u, w]{
         std::cout << "action: uncontract" << std::endl;
@@ -292,6 +334,11 @@ bool contract(int v){
         forced_in_current[w].erase(u);
         forced_vertices[v] = true;
         G[v];
+
+        // uncontract weights graph
+        W[u].erase(w);
+        W[w].erase(u);
+        W[v];
 
         return false;
     };
@@ -333,6 +380,15 @@ int get_unforced_neighbour(int v){ // TODO check if this functions is even necca
 // debug
 void print_graph(std::map<int, std::map<int, bool>>* G){
     for(const auto& [v, e] : *G){
+        std::cout << v << ": ";
+        for(const auto& [w, og] : e){
+            std::cout << w << "." << og << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+void print_graph(std::map<int, std::map<int, int>>* W){
+    for(const auto& [v, e] : *W){
         std::cout << v << ": ";
         for(const auto& [w, og] : e){
             std::cout << w << "." << og << " ";
