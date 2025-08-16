@@ -34,3 +34,25 @@ void copy_graph(std::map<int, std::map<int, bool>>* G, std::map<int, std::map<in
 void delete_graph(std::map<int, std::map<int, bool>>* G){
     G->clear();
 }
+
+// prints the given graph
+void print_graph(std::map<int, std::map<int, bool>>* G){
+    for(const auto& [v, e] : *G){
+        std::cout << v << ": ";
+        for(const auto& [w, og] : e){
+            std::cout << w << "." << og << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+// prints the given weight graph
+void print_graph(std::map<int, std::map<int, int>>* W){
+    for(const auto& [v, e] : *W){
+        std::cout << v << ": ";
+        for(const auto& [w, og] : e){
+            std::cout << w << "." << og << " ";
+        }
+        std::cout << std::endl;
+    }
+}

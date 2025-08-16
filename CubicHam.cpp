@@ -379,23 +379,3 @@ int get_unforced_neighbour(int v){ // TODO check if this functions is even necca
     // TODO maybe assertion here
     return -1;
 }
-
-// debug
-void print_graph(std::map<int, std::map<int, bool>>* G){
-    for(const auto& [v, e] : *G){
-        std::cout << v << ": ";
-        for(const auto& [w, og] : e){
-            std::cout << w << "." << og << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-void print_graph(std::map<int, std::map<int, int>>* W){
-    for(const auto& [v, e] : *W){
-        std::cout << v << ": ";
-        for(const auto& [w, og] : e){
-            std::cout << w << "." << og << " ";
-        }
-        std::cout << std::endl;
-    }
-}
