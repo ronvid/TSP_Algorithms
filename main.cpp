@@ -2,13 +2,16 @@
 
 #include <iostream>
 
-std::map<int, std::map<int, bool>> input;
-std::map<int, std::map<int, int>> input_weights;
-
 void print_graph(std::map<int, std::map<int, bool>>* G);
 void print_graph(std::map<int, std::map<int, int>>* W);
 
 int main(){
+
+    std::map<int, std::map<int, bool>> input;
+    std::map<int, std::map<int, int>> input_weights;
+    std::map<int, std::map<int, bool>> forced_edges;
+
+    int cycle_cost = 0;
 
     input = {
         { 0 , { {1,true} , {2,true} , {3,true} } },
@@ -46,19 +49,21 @@ int main(){
     };
     */
 
-    ShortestHamiltonianCycle(&input, &input_weights);
+    ShortestHamiltonianCycle(&input, &input_weights, &forced_edges, &cycle_cost);
     //remove(1,2);
 
     std::cout << " --- input --- " << std::endl;
     print_graph(&input);
+    std::cout << " --- weights --- " << std::endl;
+    print_graph(&W);
     std::cout << " --- graph --- " << std::endl;
     print_graph(&G);
     std::cout << " --- forced_in_current --- " << std::endl;
     print_graph(&forced_in_current);
     std::cout << " --- forced_in_input --- " << std::endl;
     print_graph(&forced_in_input);
-    std::cout << " --- weights --- " << std::endl;
-    print_graph(&W);
+    std::cout << " --- found cycle --- " << cycle_cost << std::endl;
+    print_graph(&forced_edges);
 
     return 0;
 }

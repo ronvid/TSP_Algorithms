@@ -5,6 +5,8 @@
 #include <climits>
 #include <iostream> //TODO debug only ig
 
+#include "GraphUtility.hpp"
+
 /**
  * This is a C++ version of David Eppsteins Implementation of Eppsteins Algorithm for finding
  * hamiltonian cycles and a solution to the Traveling Salesman Problem in Cubic Graph
@@ -98,10 +100,12 @@ std::function<bool()> main_ch = []{
 
 
 bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input,
-                              std::map<int, std::map<int, int>>* input_weights){
+                              std::map<int, std::map<int, int>>* input_weights,
+                              std::map<int, std::map<int, bool>>* forced_edges, int* cost){
 
     // copy all values from the input graph to the graph used by the algorithm
     // copy weights from input weight graph
+    // the forced edges graph is used to retun the forced edges, cost returns the cost
     // add all degree two vertices to the degree_two set
     // check for any isolated/degree one vertices
     for(const auto& [v, e] : *input){
@@ -137,18 +141,17 @@ bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input,
             // hamiltonian cycle found
             std::cout << "found cycle :D" << std::endl;
             cycle_found = true;
-            print_graph(&forced_in_input);
             std::cout << "Cost: " << current_weight << std::endl;
             // check if the found cycle has smaller cost than the best previous cycle
             if(current_weight < min_found_weight){
                 min_found_weight = current_weight;
-                //TODO save found cycle
+                delete_graph(forced_edges);
+                copy_graph(&forced_in_input, forced_edges);
             }
         }
     }
 
-    // TODO return a copy of the best found graph
-    std::cout << "Smallest Graph cost: " << min_found_weight << std::endl;
+    *cost = min_found_weight;
     return cycle_found;
 }
 
