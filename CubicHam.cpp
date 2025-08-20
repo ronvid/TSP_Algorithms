@@ -27,6 +27,9 @@ bool force(int v, int w);
 bool force_into_triangle(int v, int w);
 bool contract(int v);
 bool handle_degree_two();
+// extension
+bool handle_triangle();
+bool contract_triangle(int v, int w, int u);
 
 void print_graph(std::map<int, std::map<int, bool>>* G);
 
@@ -49,6 +52,9 @@ std::map<int, std::map<int, bool>> forced_in_current;
 
 // set of vertices that are degree_two
 std::vector<int> degree_two;
+
+// set of triangles in the graph (triangles are represented as sets)
+std::set<std::set<int>> triangles;
 
 // set of all vertices that are adjacent to a forced edge
 std::map<int, bool> forced_vertices;
@@ -126,6 +132,20 @@ bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input,
         // inivtialize vertices in forced_in_input/current graphs
         forced_in_input[v];
         forced_in_current[v];
+
+        // check if v is part of a triangle
+        // create array with neighbours of v
+        int a[G[v].size()]; int i = 0;
+        for(const auto& [w, c] : G[v]){
+            a[i] = w;
+            i++;
+        }
+        // if v has only two neighbours -> only one triangle possible
+        if(G[a[0]].contains(a[1])) triangles.insert({v, a[0], a[1]});
+        if(G[v].size() == 3){
+            if(G[a[1]].contains(a[2])) triangles.insert({v, a[1], a[2]});
+            if(G[a[2]].contains(a[0])) triangles.insert({v, a[2], a[0]});
+        }
     }
 
     actions.push_back(main_ch);
@@ -378,4 +398,61 @@ int get_unforced_neighbour(int v){ // TODO check if this functions is even necca
     }
     // TODO maybe assertion here
     return -1;
+}
+
+bool handle_triangle(){
+    // handles case that more than one triangle exists
+    // returns true if cycle was found, otherwise false
+
+    // remove triangle from list an assign its values to v, w, u
+    std::set<int> tri = *--(triangles.end());
+    triangles.erase(tri);
+    int v = *tri.begin();
+    int w = *++tri.begin();
+    int u = *++++tri.begin();
+
+    std::function<bool()> unerase = [tri]{
+        triangles.insert(tri);
+        return false;
+    };
+    actions.push_back(unerase);
+
+    return contract_triangle(v, w, u);
+}
+
+bool contract_triangle(int v, int w, int u){
+    // get neighbouring vertices x, y, z
+    int x, y, z;
+    for(const auto& [n, c] : G[v]{ if(n != w && n != u) x = n; break;}
+    for(const auto& [n, c] : G[w]{ if(n != v && n != u) y = n; break;}
+    for(const auto& [n, c] : G[u]{ if(n != v && n != w) z = n; break;}
+
+    // check if all three vertices have the same neighbour
+    if(x == y && y == z){
+        if(G.size() != 4) return false; // disjoint group of vertices exist TODO: neccassary?
+
+        // TODO maybe use iterateble values here, so there arent that many differnet IFs
+        // check if two vertices have already been forced
+        if(forced_in_current[x].contains(v) && forced_in_current[x].contains(w))){
+            remove(x,u); remove(v,w);
+            actions.push_back(main_ch);
+            return false;
+        }
+        else if(forced_in_current[x].contains(v) && forced_in_current[x].contains(u))){
+            remove(x,w); remove(v,u);
+            actions.push_back(main_ch);
+            return false;
+        }
+        else if(forced_in_current[x].contains(w) && forced_in_current[x].contains(u))){
+            remove(x,v); remove(w,u);
+            actions.push_back(main_ch);
+            return false;
+        }
+    }
+
+    // check if two triangle vertices have the same neighbour
+    // NOTE if no mutual neighbour
+    int has_neighbour = -1;
+
+    return false;
 }

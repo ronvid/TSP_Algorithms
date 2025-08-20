@@ -65,5 +65,13 @@ int main(){
     std::cout << " --- found cycle --- " << cycle_cost << std::endl;
     print_graph(&forced_edges);
 
+    std::cout << " --- triangles: " << triangles.size() << " --- " << std::endl;
+    for(auto i : triangles){
+        for(int j : i){
+            std::cout << j << " ";
+        }
+        std::cout << std::endl;
+    }
+
     return 0;
 }
