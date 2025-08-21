@@ -184,6 +184,7 @@ bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input,
 }
 
 void remove(int v, int w){
+    std::cout << "remove: " << v << "-" << w << std::endl;
     // removes edge v-w from G
     bool was_original = G[v][w];
     G[v].erase(w);
@@ -214,6 +215,7 @@ void remove(int v, int w){
 }
 
 void now_degree_two(int v){
+    std::cout << "now deg 2: " << v << std::endl;
     // changing G caused v's degree to become two
     degree_two.push_back(v);
 
@@ -226,6 +228,7 @@ void now_degree_two(int v){
 }
 
 bool safely_remove(int v, int w){
+    std::cout << "safely remove: " << v << "-" << w << std::endl;
     // remove edge v-w and update degree data list and triangle list
     // return true if successful, otherwise false
     if(forced_in_current[v].contains(w) || G[v].size() < 3 || G[w].size() < 3){
@@ -246,6 +249,7 @@ bool safely_remove(int v, int w){
 }
 
 bool remove_third_leg(int v){
+    std::cout << "remove third leg: " << v << std::endl;
     // if v has two forced edges -> remove third unforced edge
     // returns true if successful, otherwise false
     if(G[v].size() != 3 || forced_in_current[v].size() != 2){
@@ -259,6 +263,7 @@ bool remove_third_leg(int v){
 }
 
 bool force(int v, int w){
+    std::cout << "force: " << v << "-" << w << std::endl;
     // add edge v-w to forced edges
     // return true if successful, otherwise false
     if(forced_in_current[v].contains(w)){
@@ -306,6 +311,7 @@ bool force(int v, int w){
 }
 
 bool force_into_triangle(int v, int w){
+    std::cout << "force into triangle: " << v << "-" << w << std::endl;
     // after v-w was forced, check if w belongs to a triangle -> force opposite edge
     if(G[w].size() != 3){
         return true;
@@ -325,6 +331,7 @@ bool force_into_triangle(int v, int w){
 }
 
 bool contract(int v){
+    std::cout << "contract: " << v << std::endl;
     // remove degree two vertex v
     // returns true if cycle should be reported, otherwise false
     // appends recursive search of contracted graph to action stack
@@ -390,6 +397,7 @@ bool contract(int v){
 }
 
 bool handle_degree_two(){
+    std::cout << "handle deg 2" << std::endl;
     // handles case that degree two vertices exist
     // return true if cycle was found, otherwise false
 
