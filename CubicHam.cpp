@@ -443,32 +443,39 @@ void handle_triangle(){
 
 void contract_triangle(int v, int w, int u){
     std::cout << "Contract Triangle: " << v << " " << w << " " << u << std::endl;
-    // remove the unforced edge between v, w, u with the highest cost
+    // removes the unforced edge between v, w, u with the highest cost
 
     // all three edges are forced -> no solution // TODO neccassary?
     if(forced_in_current[v].contains(w) && forced_in_current[w].contains(u) && forced_in_current[u].contains(v)){
         return;
     }
-    int x, y;
-    int c = INT_MIN;
-    if(!forced_in_current[v].contains(w) && c < W[v][w]){
-        x = v;
-        y = w;
-        c = W[v][w];
+
+    // get the neighbouring vertices to the triangle
+    int x,y,z; // neighbouring edges
+    for(const auto& [e, c] : G[v]){ if(e != w && e != u) x = e; break; }
+    for(const auto& [e, c] : G[w]){ if(e != v && e != u) y = e; break; }
+    for(const auto& [e, c] : G[u]){ if(e != v && e != w) z = e; break; }
+
+    int a, b; // edge to be deleted
+    int c = INT_MIN; // highest cost
+    if(!forced_in_current[v].contains(w) && c < W[v][w] + W[u][z]){
+        a = v;
+        b = w;
+        c = W[v][w] + W[u][z];
     }
-    if(!forced_in_current[w].contains(u) && c < W[w][u]){
-        x = w;
-        y = u;
-        c = W[w][u];
+    if(!forced_in_current[w].contains(u) && c < W[w][u] + W[v][x]){
+        a = w;
+        b = u;
+        c = W[w][u] + W[v][x];
     }
-    if(!forced_in_current[v].contains(w) && c < W[u][v]){
-        x = u;
-        y = v;
-        c = W[u][v];
+    if(!forced_in_current[v].contains(w) && c < W[u][v] + W[w][y]){
+        a = u;
+        b = v;
+        c = W[u][v] + W[w][y];
     }
 
-    std::cout << "rem tri edge: " << x << "-" << y << std::endl;
-    if(safely_remove(x, y)){
+    std::cout << "rem tri edge: " << a << "-" << b << std::endl;
+    if(safely_remove(a, b)){
         actions.push_back(main_ch);
     }
 }
