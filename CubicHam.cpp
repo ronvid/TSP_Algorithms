@@ -28,8 +28,8 @@ bool force_into_triangle(int v, int w);
 bool contract(int v);
 bool handle_degree_two();
 // extension
-bool handle_triangle();
-bool contract_triangle(int v, int w, int u);
+void handle_triangle();
+void contract_triangle(int v, int w, int u);
 
 void print_graph(std::map<int, std::map<int, bool>>* G);
 
@@ -71,6 +71,12 @@ std::function<bool()> main_ch = []{
 
     if(degree_two.size() > 0){
         return handle_degree_two();
+    }
+
+    // check triangles
+    if(triangles.size() > 0){
+        handle_triangle();
+        return false;
     }
 
     // Now every vertex is degree three and forced edges form a matching
@@ -400,7 +406,8 @@ int get_unforced_neighbour(int v){ // TODO check if this functions is even necca
     return -1;
 }
 
-bool handle_triangle(){
+void handle_triangle(){
+    std::cout << "Handle Triangle" << std::endl;
     // handles case that more than one triangle exists
     // returns true if cycle was found, otherwise false
 
@@ -417,42 +424,50 @@ bool handle_triangle(){
     };
     actions.push_back(unerase);
 
-    return contract_triangle(v, w, u);
+    contract_triangle(v, w, u);
 }
 
-bool contract_triangle(int v, int w, int u){
-    // get neighbouring vertices x, y, z
-    int x, y, z;
-    for(const auto& [n, c] : G[v]{ if(n != w && n != u) x = n; break;}
-    for(const auto& [n, c] : G[w]{ if(n != v && n != u) y = n; break;}
-    for(const auto& [n, c] : G[u]{ if(n != v && n != w) z = n; break;}
+void contract_triangle(int v, int w, int u){
+    std::cout << "Contract Triangle: " << v << " " << w << " " << u << std::endl;
+    // remove the unforced edge between v, w, u with the highest cost
 
-    // check if all three vertices have the same neighbour
-    if(x == y && y == z){
-        if(G.size() != 4) return false; // disjoint group of vertices exist TODO: neccassary?
+    // all three edges are forced -> no solution // TODO neccassary?
+    if(forced_in_current[v].contains(w) && forced_in_current[w].contains(u) && forced_in_current[u].contains(v)){
+        return;
+    }
+    int x, y;
+    int c = INT_MIN;
+    if(!forced_in_current[v].contains(w) && c < W[v][w]){
+        x = v;
+        y = w;
+        c = W[v][w];
+    }
+    if(!forced_in_current[w].contains(u) && c < W[w][u]){
+        x = w;
+        y = u;
+        c = W[w][u];
+    }
+    if(!forced_in_current[v].contains(w) && c < W[u][v]){
+        x = u;
+        y = v;
+        c = W[u][v];
+    }
+    // check if x and y form a triangle with a different vertex
+    for(const auto& [e, i] : G[x]){
+        if(e != v && e != w && e != u && G[e].contains(y)){
+            std::set<int> tri = {x,y,e};
+            triangles.erase(tri);
 
-        // TODO maybe use iterateble values here, so there arent that many differnet IFs
-        // check if two vertices have already been forced
-        if(forced_in_current[x].contains(v) && forced_in_current[x].contains(w))){
-            remove(x,u); remove(v,w);
-            actions.push_back(main_ch);
-            return false;
-        }
-        else if(forced_in_current[x].contains(v) && forced_in_current[x].contains(u))){
-            remove(x,w); remove(v,u);
-            actions.push_back(main_ch);
-            return false;
-        }
-        else if(forced_in_current[x].contains(w) && forced_in_current[x].contains(u))){
-            remove(x,v); remove(w,u);
-            actions.push_back(main_ch);
-            return false;
+            std::function<bool()> unerase_triangle = [tri]{
+                triangles.insert(tri);
+                return false;
+            };
+            actions.push_back(unerase_triangle);
         }
     }
 
-    // check if two triangle vertices have the same neighbour
-    // NOTE if no mutual neighbour
-    int has_neighbour = -1;
-
-    return false;
+    std::cout << "rem tri edge: " << x << "-" << y << std::endl;
+    if(safely_remove(x, y)){
+        actions.push_back(main_ch);
+    }
 }
