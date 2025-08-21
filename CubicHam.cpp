@@ -29,6 +29,7 @@ bool contract(int v);
 bool handle_degree_two();
 // extension
 void remove_triangle(int v, int w, int u);
+void add_triangle(int v, int w, int u);
 void handle_triangle();
 void contract_triangle(int v, int w, int u);
 
@@ -225,11 +226,19 @@ void now_degree_two(int v){
 }
 
 bool safely_remove(int v, int w){
-    // remove edge v-w and update degree data list
+    // remove edge v-w and update degree data list and triangle list
     // return true if successful, otherwise false
     if(forced_in_current[v].contains(w) || G[v].size() < 3 || G[w].size() < 3){
         return false;
     }
+
+    // check if v-w form triangles -> remove them
+    for(const auto& [e, c] : G[v]){
+        if(G[w].contains(e)){
+            remove_triangle(v,w,e);
+        }
+    }
+
     remove(v,w);
     now_degree_two(v);
     now_degree_two(w);
@@ -328,7 +337,7 @@ bool contract(int v){
         else        w = (*i).first;
     }
 
-    // check if parallel edge will be created
+    // check if parallel edge will be created (v-w-u forms triangle)
     if(G[u].contains(w)){
         // check if G is a triangle
         if(G.size() == 3){
@@ -355,6 +364,8 @@ bool contract(int v){
     // change weights
     W[u][w] = W[w][u] = new_weight;
     W.erase(v);
+
+    // TODO add a triangle here if v-w-u-x form a 4-c
 
     std::function<bool()> uncontract = [v, u, w]{
         std::cout << "action: uncontract" << std::endl;
@@ -419,8 +430,6 @@ void handle_triangle(){
     int w = *++tri.begin();
     int u = *++++tri.begin();
 
-    remove_triangle(v, w, u);
-
     contract_triangle(v, w, u);
 }
 
@@ -449,12 +458,6 @@ void contract_triangle(int v, int w, int u){
         y = v;
         c = W[u][v];
     }
-    // check if x and y form a triangle with a different vertex
-    for(const auto& [e, i] : G[x]){
-        if(e != v && e != w && e != u && G[e].contains(y)){
-            remove_triangle(x,y,e);
-        }
-    }
 
     std::cout << "rem tri edge: " << x << "-" << y << std::endl;
     if(safely_remove(x, y)){
@@ -463,6 +466,7 @@ void contract_triangle(int v, int w, int u){
 }
 
 void remove_triangle(int v, int w, int u){
+    std::cout << "remove triangle: " << v << "-" << w << "-" << u << std::endl;
     std::set<int> tri = {v, w, u};
     triangles.erase(tri);
 
@@ -471,4 +475,16 @@ void remove_triangle(int v, int w, int u){
         return false;
     };
     actions.push_back(unremove_triangle);
+}
+
+void add_triangle(int v, int w, int u){
+    std::cout << "add triangle: " << v << "-" << w << "-" << u << std::endl;
+    std::set<int> tri = {v,w,u};
+    triangles.insert(tri);
+
+    std::function<bool()> unadd_triangle = [tri]{
+        triangles.erase(tri);
+        return false;
+    };
+    actions.push_back(unadd_triangle);
 }
