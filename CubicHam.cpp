@@ -28,6 +28,7 @@ bool force_into_triangle(int v, int w);
 bool contract(int v);
 bool handle_degree_two();
 // extension
+void remove_triangle(int v, int w, int u);
 void handle_triangle();
 void contract_triangle(int v, int w, int u);
 
@@ -418,11 +419,7 @@ void handle_triangle(){
     int w = *++tri.begin();
     int u = *++++tri.begin();
 
-    std::function<bool()> unerase = [tri]{
-        triangles.insert(tri);
-        return false;
-    };
-    actions.push_back(unerase);
+    remove_triangle(v, w, u);
 
     contract_triangle(v, w, u);
 }
@@ -455,14 +452,7 @@ void contract_triangle(int v, int w, int u){
     // check if x and y form a triangle with a different vertex
     for(const auto& [e, i] : G[x]){
         if(e != v && e != w && e != u && G[e].contains(y)){
-            std::set<int> tri = {x,y,e};
-            triangles.erase(tri);
-
-            std::function<bool()> unerase_triangle = [tri]{
-                triangles.insert(tri);
-                return false;
-            };
-            actions.push_back(unerase_triangle);
+            remove_triangle(x,y,e);
         }
     }
 
@@ -470,4 +460,15 @@ void contract_triangle(int v, int w, int u){
     if(safely_remove(x, y)){
         actions.push_back(main_ch);
     }
+}
+
+void remove_triangle(int v, int w, int u){
+    std::set<int> tri = {v, w, u};
+    triangles.erase(tri);
+
+    std::function<bool()> unremove_triangle = [tri]{
+        triangles.insert(tri);
+        return false;
+    };
+    actions.push_back(unremove_triangle);
 }
