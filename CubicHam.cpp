@@ -30,8 +30,8 @@ bool handle_degree_two();
 // extension
 void remove_triangle(int v, int w, int u);
 void add_triangle(int v, int w, int u);
-void handle_triangle();
-void contract_triangle(int v, int w, int u);
+bool handle_triangle();
+bool contract_triangle(int v, int w, int u);
 
 void print_graph(std::map<int, std::map<int, bool>>* G);
 
@@ -45,6 +45,9 @@ std::map<int, std::map<int, int>> W;
 int current_weight = 0;
 // the weight of the current best weight graph
 int min_found_weight = INT_MAX;
+
+// determines the number assigned to a new vertex
+int next_vertex_id = 0;
 
 // a subgraph of forced edges in original G
 std::map<int, std::map<int, bool>> forced_in_input;
@@ -77,8 +80,7 @@ std::function<bool()> main_ch = []{
 
     // check triangles
     if(triangles.size() > 0){
-        handle_triangle();
-        return false;
+        return handle_triangle();
     }
 
     // Now every vertex is degree three and forced edges form a matching
@@ -154,6 +156,11 @@ bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input,
             if(G[a[1]].contains(a[2])) triangles.insert({v, a[1], a[2]});
             if(G[a[2]].contains(a[0])) triangles.insert({v, a[2], a[0]});
         }
+
+        // maintain vertex id
+        if(v >= next_vertex_id){
+            next_vertex_id = v + 1;
+        }
     }
 
     actions.push_back(main_ch);
@@ -185,6 +192,14 @@ bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input,
 
 void remove(int v, int w){
     std::cout << "remove: " << v << "-" << w << std::endl;
+
+    // check if v-w form triangles -> remove them
+    for(const auto& [e, c] : G[v]){
+        if(G[w].contains(e)){
+            remove_triangle(v,w,e);
+        }
+    }
+
     // removes edge v-w from G
     bool was_original = G[v][w];
     G[v].erase(w);
@@ -193,6 +208,7 @@ void remove(int v, int w){
     if (was_forced){
         forced_in_current[v].erase(w);
         forced_in_current[w].erase(v);
+        current_weight -= W[v][w]; // reduce total cost of forced edges
     }
 
     // remove weights
@@ -202,12 +218,14 @@ void remove(int v, int w){
 
     std::function<bool()> unremove = [v, w, was_original, was_forced, weight]{
         std::cout << "action: unremove" << std::endl;
+        // add weights back
+        W[v][w] = W[w][v] = weight;
+
         G[v][w] = G[w][v] = was_original;
         if(was_forced){
             forced_in_current[v][w] = forced_in_current[w][v] = true;
+            current_weight += W[v][w];
         }
-        // add weights back
-        W[v][w] = W[w][v] = weight;
         return false;
     };
     actions.push_back(unremove);
@@ -233,13 +251,6 @@ bool safely_remove(int v, int w){
     // return true if successful, otherwise false
     if(forced_in_current[v].contains(w) || G[v].size() < 3 || G[w].size() < 3){
         return false;
-    }
-
-    // check if v-w form triangles -> remove them
-    for(const auto& [e, c] : G[v]){
-        if(G[w].contains(e)){
-            remove_triangle(v,w,e);
-        }
     }
 
     remove(v,w);
@@ -371,8 +382,15 @@ bool contract(int v){
     // change weights
     W[u][w] = W[w][u] = new_weight;
     W.erase(v);
+    current_weight += W[u][w]; // add weight of new edge to total weight
 
-    // TODO add a triangle here if v-w-u-x form a 4-c
+    // TODO add a triangle here if v-w-u-x form a 4-c (maybe?)
+    // insert tri if was formed
+    for(const auto& [e,c] : G[w]){
+        if(G[u].contains(e)){
+            add_triangle(w, u, e);
+        }
+    }
 
     std::function<bool()> uncontract = [v, u, w]{
         std::cout << "action: uncontract" << std::endl;
@@ -426,7 +444,7 @@ int get_unforced_neighbour(int v){ // TODO check if this functions is even necca
     return -1;
 }
 
-void handle_triangle(){
+bool handle_triangle(){
     std::cout << "Handle Triangle" << std::endl;
     // handles case that more than one triangle exists
     // returns true if cycle was found, otherwise false
@@ -438,46 +456,134 @@ void handle_triangle(){
     int w = *++tri.begin();
     int u = *++++tri.begin();
 
-    contract_triangle(v, w, u);
+    return contract_triangle(v, w, u);
 }
 
-void contract_triangle(int v, int w, int u){
+bool contract_triangle(int v, int w, int u){
     std::cout << "Contract Triangle: " << v << " " << w << " " << u << std::endl;
-    // removes the unforced edge between v, w, u with the highest cost
+    // removes a triangle from the graph and adds a single vertex in its position
 
-    // all three edges are forced -> no solution // TODO neccassary?
-    if(forced_in_current[v].contains(w) && forced_in_current[w].contains(u) && forced_in_current[u].contains(v)){
-        return;
+    // save neighbouring vertices
+    int a, b, c;
+    for(const auto& [e, o] : G[v]){ if(e != w && e != u){ a = e; break; }}
+    for(const auto& [e, o] : G[w]){ if(e != v && e != u){ b = e; break; }}
+    for(const auto& [e, o] : G[u]){ if(e != v && e != w){ c = e; break; }}
+
+    bool f_a = false; bool f_b = false; bool f_c = false; // saves if edes x-a, x-b, x-c should be forced
+
+    // save costs of edges TODO nicer way to save this?
+    int vw = W[v][w]; int wu = W[w][u]; int uv = W[u][v];
+    int va = W[v][a]; int wb = W[w][b]; int uc = W[u][c];
+
+    // if a, b and c are the same -> solve directly
+    if(a == b && b == c){
+        if(G.size() != 4){ // G contains independent(?) groups -> no solution
+            return false;
+        }
+        else{
+            std::cout << "solve directly!" << va + wu << " " << wb + uv << " " <<  uc + vw << " " << std::endl;
+            // remove edge of a that has the highest cost and let deg_2 handle the rest
+            // if it can be removed is is not false, if not possible, check others
+            if(va + wu >= wb + uv && va + wu >= uc + vw && safely_remove(v,a)){
+                actions.push_back(main_ch);
+            }
+            else if(wb + uv >= va + wu && wb + uv >= uc + vw && safely_remove(w,b)){
+                actions.push_back(main_ch);
+            }
+            else if(uc + vw >= va + wu && uc + vw >= wb + uv && safely_remove(w,c)){
+                actions.push_back(main_ch);
+            }
+            // if none could be removed -> no solution
+            return false;
+        }
     }
 
-    // get the neighbouring vertices to the triangle
-    int x,y,z; // neighbouring edges
-    for(const auto& [e, c] : G[v]){ if(e != w && e != u) x = e; break; }
-    for(const auto& [e, c] : G[w]){ if(e != v && e != u) y = e; break; }
-    for(const auto& [e, c] : G[u]){ if(e != v && e != w) z = e; break; }
-
-    int a, b; // edge to be deleted
-    int c = INT_MIN; // highest cost
-    if(!forced_in_current[v].contains(w) && c < W[v][w] + W[u][z]){
-        a = v;
-        b = w;
-        c = W[v][w] + W[u][z];
-    }
-    if(!forced_in_current[w].contains(u) && c < W[w][u] + W[v][x]){
-        a = w;
-        b = u;
-        c = W[w][u] + W[v][x];
-    }
-    if(!forced_in_current[v].contains(w) && c < W[u][v] + W[w][y]){
-        a = u;
-        b = v;
-        c = W[u][v] + W[w][y];
+    // TODO re check this part (if correct (esp. formulars) and maybe if a better way exists) {
+    // add new edge x
+    int x = next_vertex_id++;
+    G[x];
+    // insert edge x-a
+    G[x][a] = G[a][x] = false;
+    W[x][a] = W[a][x] = va + wu;
+    if(forced_in_current[v].contains(a)){ // if v-a was forced -> force x-a
+        f_a = true;
     }
 
-    std::cout << "rem tri edge: " << a << "-" << b << std::endl;
-    if(safely_remove(a, b)){
-        actions.push_back(main_ch);
+    // insert edge x-b, check if it already exists
+    if(G[x].contains(b)){ // a and b are the same
+        if(!forced_in_current[x].contains(b)){ // previous edge was not forced use x-b if forced or edge with lower cost
+            if(forced_in_current[w].contains(b)){ // overwrite if wb was forced
+                W[x][b] = wb + uv;
+                f_b = true;
+            }
+            else if(wb + uv < W[x][b]){ // overwrite if wb has lower cost
+                W[x][b] = wb + uv;
+            }
+        }
+        // since a and be are the same -> x and b are now only deg 2
+        now_degree_two(x);
+        now_degree_two(b);
     }
+    else{
+        G[x][b] = G[b][x] = false;
+        W[x][b] = W[b][x] = wb + uv;
+        if(forced_in_current[w].contains(b)){
+            f_b = true;
+        }
+    }
+
+    // insert edge x-c, check if it already exists
+    if(G[x].contains(c)){ // a/b and c are the same
+        if(!forced_in_current[x].contains(c)){ // previous edge was not forced use x-c if forced or edge with lower cost
+            if(forced_in_current[u].contains(c)){ // overwrite if wb was forced
+                W[x][c] = uc + vw;
+                f_c = true;
+            }
+            else if(uc + vw < W[x][c]){ // overwrite if uc has lower cost
+                W[x][c] = uc + vw;
+            }
+        }
+        // since a and be are the same -> x and c are now only deg 2
+        now_degree_two(x);
+        now_degree_two(c);
+    }
+    else{
+        G[x][c] = G[c][x] = false;
+        W[x][c] = W[c][x] = uc + vw;
+        if(forced_in_current[u].contains(c)){
+            f_c = true;
+        }
+    }
+    // TODO }
+
+    // erase old edges and costs
+    remove(v,w);
+    remove(v,a);
+    remove(w,u);
+    remove(w,b);
+    remove(u,v);
+    remove(u,c);
+    G.erase(v); W.erase(v);
+    G.erase(w); W.erase(w);
+    G.erase(u); W.erase(u);
+    // force edges of x that need to be forced
+    if(f_a) force(x,a);
+    if(f_b) force(x,b);
+    if(f_c) force(x,c);
+
+    std::function<bool()> uncontract_triangle = [v,w,u,x]{
+        /// insert edges back to G and W
+        G[v]; W[v];
+        G[w]; W[w];
+        G[u]; W[u];
+        // remove new edges x-a x-b x-c
+        G.erase(x); W.erase(x);
+        return false;
+    };
+    actions.push_back(uncontract_triangle);
+    actions.push_back(main_ch);
+
+    return false;
 }
 
 void remove_triangle(int v, int w, int u){
