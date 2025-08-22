@@ -571,13 +571,15 @@ bool contract_triangle(int v, int w, int u){
     if(f_b) force(x,b);
     if(f_c) force(x,c);
 
-    std::function<bool()> uncontract_triangle = [v,w,u,x]{
+    std::function<bool()> uncontract_triangle = [v,w,u,x,a,b,c]{
         /// insert edges back to G and W
         G[v]; W[v];
         G[w]; W[w];
         G[u]; W[u];
         // remove new edges x-a x-b x-c
         G.erase(x); W.erase(x);
+        G[a].erase(x); G[b].erase(x); G[c].erase(x);
+        W[a].erase(x); W[b].erase(x); W[c].erase(x);
         return false;
     };
     actions.push_back(uncontract_triangle);
