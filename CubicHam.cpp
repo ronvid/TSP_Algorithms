@@ -34,6 +34,7 @@ bool handle_triangle();
 bool contract_triangle(int v, int w, int u);
 void check_for_four_cycle(int v);
 void remove_four_cycle(std::set<int> fc);
+bool solve_four_cycle();
 
 void print_graph(std::map<int, std::map<int, bool>>* G);
 
@@ -78,6 +79,7 @@ std::function<bool()> main_ch = []{
     // main event dispatcher
     // returns true if a hamiltonian cycle was found, otherwise false
 
+    // Step 1
     if(degree_two.size() > 0){
         return handle_degree_two();
     }
@@ -87,6 +89,15 @@ std::function<bool()> main_ch = []{
         return handle_triangle();
     }
 
+    // Step 2
+    // if 4-cycles form a collection of disjoint 4-cycles
+    // every vertex is part of exactly one 4-cycle
+    if(G.size() == four_cycles.size() * 4){
+        return solve_four_cycle();
+    }
+
+    // Step 3
+    std::cout << " --- Step 3 --- " << std::endl;
     // Now every vertex is degree three and forced edges form a matching
     // pick edge for rcursive search (optimaly one that is adjacent to a forced edge)
     int v;
@@ -638,7 +649,7 @@ void check_for_four_cycle(int v){
     // check if v has two unforced edges
     int x = -1; int y = -1;
     for(const auto& [e, o] : G[v]){
-        if(forced_in_current[x].contains(e)) continue;
+        if(forced_in_current[v].contains(e)) continue;
         if(x == -1) x = e;
         else y = e;
     }
@@ -654,7 +665,7 @@ void check_for_four_cycle(int v){
         }
         if(w2 == -1) continue;
         // check if v and w make a four cycle
-        std::cout << "possible" << std::endl;
+        std::cout << "possible: " << w << " w1: " << w1 << " w2: " << w2 << " x: " << x << " y: " << y << std::endl;
         if( (x == w1 && y == w2) || (x == w2 && y == w1) ){
             // get other neighbouring vertices
             int a = -1; int b = -1;
@@ -697,4 +708,47 @@ void remove_four_cycle(std::set<int> fc){
         return false;
     };
     actions.push_back(unremove_fc);
+}
+
+bool solve_four_cycle(){
+    // Step 2 in Eppstein's algorithm
+    std::cout << "solve four cycle" << std::endl;
+
+    // H consists of the 4-cycle edges, that are opposite to each other and have combined lower costs,
+    // than the other opposite edges of the same 4-cycle
+    std::set<std::set<int>> H;
+    for(std::set<int> fc : four_cycles){
+        // a-d represent the four vertices of the 4-cycle, a and c are opposite and a and d between
+        int a,c,d; int b = -1;
+        a = *(fc.begin());
+        for(int i : fc){ // opposite of a is either not connected to a or connected by a forced edge
+            if(a != i && (!G[a].contains(i) || forced_in_current[a].contains(i))){ c = i; break; }
+        }
+        for(const auto& [e, o] : G[a]){
+            if(forced_in_current[a].contains(e)) continue;
+            if(b == -1) b = e;
+            else d = e;
+        }
+        // add the edges to H, that have a smaller combined weight
+        std::cout << "a: " << a << " b: " << b << " c: " << c << " d: " << d << std::endl;
+        std::cout << "W: " << W[a][b] << " " << W[c][d] << " " << W[a][d] << " " << W[c][b] << std::endl;
+        if(W[a][b] + W[c][d] < W[a][d] + W[c][b]){
+            H.insert({a,b});
+            H.insert({c,d});
+        }
+        else{
+            H.insert({a,d});
+            H.insert({c,b});
+        }
+
+    }
+    std::cout << "H values" << std::endl;
+    for(std::set<int> h : H){
+        for(int i : h){
+            std::cout << i << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    return false;
 }
