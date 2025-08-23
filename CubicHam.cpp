@@ -32,6 +32,8 @@ void remove_triangle(int v, int w, int u);
 void add_triangle(int v, int w, int u);
 bool handle_triangle();
 bool contract_triangle(int v, int w, int u);
+void check_for_four_cycle(int v);
+void remove_four_cycle(std::set<int> fc);
 
 void print_graph(std::map<int, std::map<int, bool>>* G);
 
@@ -60,6 +62,8 @@ std::vector<int> degree_two;
 
 // set of triangles in the graph (triangles are represented as sets)
 std::set<std::set<int>> triangles;
+// set of 4-cycles simmilar to triangles
+std::set<std::set<int>> four_cycles;
 
 // set of all vertices that are adjacent to a forced edge
 std::map<int, bool> forced_vertices;
@@ -199,6 +203,13 @@ void remove(int v, int w){
             remove_triangle(v,w,e);
         }
     }
+    // check if v-w is part of a four cycle -> remove four cycle
+    for(std::set<int> fc : four_cycles){
+        if(fc.contains(v) && fc.contains(w)){
+            remove_four_cycle(fc);
+            break;
+        }
+    }
 
     // removes edge v-w from G
     bool was_original = G[v][w];
@@ -298,6 +309,10 @@ bool force(int v, int w){
     // add weight
     int weight = W[v][w];
     current_weight += weight;
+
+    // look if the newly forced vertices create a four cycle
+    check_for_four_cycle(v);
+    check_for_four_cycle(w);
 
     std::function<bool()> unforce = [v, w, was_original, v_not_previously_forced, w_not_previously_forced, weight]{
         std::cout << "action: unforce" << std::endl;
@@ -610,4 +625,76 @@ void add_triangle(int v, int w, int u){
         return false;
     };
     actions.push_back(unadd_triangle);
+}
+
+void check_for_four_cycle(int v){
+    std::cout << "check for cycle " << v << std::endl;
+    // check if v and any other forced vertex form a 4-cycle
+    // check if v can be a 4-cycle edge / is not already a 4-cycle edge
+    if(G[v].size() != 3) return;
+    for(std::set<int> c : four_cycles){
+        if(c.contains(v)) return;
+    }
+    // check if v has two unforced edges
+    int x = -1; int y = -1;
+    for(const auto& [e, o] : G[v]){
+        if(forced_in_current[x].contains(e)) continue;
+        if(x == -1) x = e;
+        else y = e;
+    }
+    if(y == -1) return; // more than one forced edge
+
+    for(const auto& [w, b] : forced_vertices){
+        if(w == v) continue;
+        int w1 = -1; int w2 = -1;
+        for(const auto& [e, o] : G[w]){
+            if(forced_in_current[w].contains(e)) continue;
+            if(w1 == -1) w1 = e;
+            else w2 = e;
+        }
+        if(w2 == -1) continue;
+        // check if v and w make a four cycle
+        std::cout << "possible" << std::endl;
+        if( (x == w1 && y == w2) || (x == w2 && y == w1) ){
+            // get other neighbouring vertices
+            int a = -1; int b = -1;
+            for(const auto& [e, o] : G[x]){
+                if(e != v && e != w) a = e;
+            }
+            for(const auto& [e, o] : G[y]){
+                if(e != v && e != w) b = e;
+            }
+            if(x == -1 || y == -1) return; // no neighbouring vertices
+
+            // add 4-cycle to list
+            std::cout << "found fc: " << v << " " << w << " " << x << " " << y << std::endl;
+            std::set<int> fc = {v,w,x,y};
+            four_cycles.insert(fc);
+
+            std::function<bool()> remove_fc = [fc]{
+                four_cycles.erase(fc);
+                return false;
+            };
+            actions.push_back(remove_fc);
+
+            // force adjacent edges
+            force(x,a);
+            force(y,b);
+
+            return;
+        }
+
+
+    }
+}
+
+void remove_four_cycle(std::set<int> fc){
+    std::cout << "remove four cycle: " << *fc.begin() << " " << *++fc.begin() << " " << *++++fc.begin() << " " << *++++++fc.begin() << std::endl;
+    four_cycles.erase(fc);
+
+    std::function<bool()> unremove_fc = [fc]{
+        four_cycles.insert(fc);
+        return false;
+    };
+    actions.push_back(unremove_fc);
 }
