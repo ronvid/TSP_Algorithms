@@ -714,6 +714,12 @@ bool solve_four_cycle(){
     // Step 2 in Eppstein's algorithm
     std::cout << "solve four cycle" << std::endl;
 
+    // the graph structures for creating the minimum spanning tree
+    std::map<int, std::set<int>> mst; // the minimum spanning tree graph
+    std::map<int, std::map<int, int>> mst_W; // weights for the mst
+    std::map<int, int> vertex_to_mst; // vertices are mapped to thier corresponding vertex in the mst
+    int id = 0; // the next id for the mst
+
     // H consists of the 4-cycle edges, that are opposite to each other and have combined lower costs,
     // than the other opposite edges of the same 4-cycle
     std::set<std::set<int>> H;
@@ -735,13 +741,53 @@ bool solve_four_cycle(){
         if(W[a][b] + W[c][d] < W[a][d] + W[c][b]){
             H.insert({a,b});
             H.insert({c,d});
+            // create an edge in the mst
+            mst[id].insert(id+1);
+            mst[id+1].insert(id);
+            // add the weight to the weight graph (difference between H edges and non H edges)
+            mst_W[id][id+1] = W[a][d] + W[b][c] - (W[a][b] + W[c][d]);
+            mst_W[id+1][id] = W[a][d] + W[b][c] - (W[a][b] + W[c][d]);
+            // map the vertices of G to the vertices of the mst
+            vertex_to_mst[a] = id; vertex_to_mst[b] = id;
+            vertex_to_mst[c] = id+1; vertex_to_mst[d] = id+1;
+            id += 2;
         }
         else{
             H.insert({a,d});
             H.insert({c,b});
+            // create an edge in the mst
+            mst[id].insert(id+1);
+            mst[id+1].insert(id);
+            // add the weight to the weight graph
+            mst_W[id][id+1] = W[a][b] + W[d][c] - (W[a][d] + W[b][c]);
+            mst_W[id+1][id] = W[a][b] + W[d][c] - (W[a][d] + W[b][c]);
+            // map the vertices of G to the vertices of the mst
+            vertex_to_mst[a] = id; vertex_to_mst[d] = id;
+            vertex_to_mst[b] = id+1; vertex_to_mst[c] = id+1;
+            id += 2;
         }
 
     }
+
+    // debug print
+    std::cout << "MST" << std::endl;
+    for(const auto& [v, w] : mst){
+        std::cout << v << ": ";
+        for(int i : w){
+            std::cout << i << " ";
+        }
+        std::cout << "( ";
+        for(const auto& [e, c] : mst_W[v]){
+            std::cout << c << " ";
+        }
+        std::cout << " )" << std::endl;
+    }
+    std::cout << "vertex to mst" << std::endl;
+    for(const auto& [v, w] : vertex_to_mst){
+        std::cout << v << ":" << w << std::endl;
+    }
+
+
     std::cout << "H values" << std::endl;
     for(std::set<int> h : H){
         for(int i : h){
