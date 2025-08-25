@@ -712,13 +712,14 @@ void remove_four_cycle(std::set<int> fc){
 
 bool solve_four_cycle(){
     // Step 2 in Eppstein's algorithm
+    // NOTE uses a workaround, were costs are calculated but edges are not forced (doesn't matter currently, since the triangle removing, has a simmilar problem, but once/if that is fixed, this should be fixed as well) TODO
     std::cout << "solve four cycle" << std::endl;
 
     // the graph structures for creating the minimum spanning tree
-    std::map<int, std::set<int>> mst; // the minimum spanning tree graph
-    std::map<int, std::map<int, int>> mst_W; // weights for the mst
+    std::map<int, std::map<int, int>> mst; // mnimum spanning tree with weights
     std::map<int, int> vertex_to_mst; // vertices are mapped to thier corresponding vertex in the mst
     int id = 0; // the next id for the mst
+    int calculated_cost = 0; // the additional cost calculated by the fc-solver (workaround)
 
     // H consists of the 4-cycle edges, that are opposite to each other and have combined lower costs,
     // than the other opposite edges of the same 4-cycle
@@ -736,17 +737,14 @@ bool solve_four_cycle(){
             else d = e;
         }
         // add the edges to H, that have a smaller combined weight
-        std::cout << "a: " << a << " b: " << b << " c: " << c << " d: " << d << std::endl;
-        std::cout << "W: " << W[a][b] << " " << W[c][d] << " " << W[a][d] << " " << W[c][b] << std::endl;
         if(W[a][b] + W[c][d] < W[a][d] + W[c][b]){
             H.insert({a,b});
             H.insert({c,d});
-            // create an edge in the mst
-            mst[id].insert(id+1);
-            mst[id+1].insert(id);
-            // add the weight to the weight graph (difference between H edges and non H edges)
-            mst_W[id][id+1] = W[a][d] + W[b][c] - (W[a][b] + W[c][d]);
-            mst_W[id+1][id] = W[a][d] + W[b][c] - (W[a][b] + W[c][d]);
+            // create an edge in the mst, with cost
+            int cost = W[a][d] + W[b][c] - (W[a][b] + W[c][d]); // cost of this H edge pair
+            mst[id][id+1] = cost;
+            mst[id+1][id] = cost;
+            calculated_cost += W[a][b] + W[c][d]; // workaround
             // map the vertices of G to the vertices of the mst
             vertex_to_mst[a] = id; vertex_to_mst[b] = id;
             vertex_to_mst[c] = id+1; vertex_to_mst[d] = id+1;
@@ -755,12 +753,11 @@ bool solve_four_cycle(){
         else{
             H.insert({a,d});
             H.insert({c,b});
-            // create an edge in the mst
-            mst[id].insert(id+1);
-            mst[id+1].insert(id);
-            // add the weight to the weight graph
-            mst_W[id][id+1] = W[a][b] + W[d][c] - (W[a][d] + W[b][c]);
-            mst_W[id+1][id] = W[a][b] + W[d][c] - (W[a][d] + W[b][c]);
+            // create an edge in the mst, with cost
+            int cost = W[a][b] + W[d][c] - (W[a][d] + W[b][c]);
+            mst[id][id+1] = cost;
+            mst[id+1][id] = cost;
+            calculated_cost += W[a][d] + W[b][c]; // workaround
             // map the vertices of G to the vertices of the mst
             vertex_to_mst[a] = id; vertex_to_mst[d] = id;
             vertex_to_mst[b] = id+1; vertex_to_mst[c] = id+1;
@@ -769,18 +766,102 @@ bool solve_four_cycle(){
 
     }
 
+    // combine the vertices that should be one vertex
+    // every vertex on one path should be combined to one vertex
+    int start = (*vertex_to_mst.begin()).first; // start of the path
+    int cur = start; // current vertex in the path
+    int mst_cur = vertex_to_mst[cur]; // current vertex of mst to add to
+    while(true){
+        // alternate between H edges and forced edges
+        // find a vertex to form the H edge
+        for(const auto& [w, o] : G[cur]){
+            if (H.contains({cur, w})) {cur = w; break; }
+        }
+        // remove new cur vertex from the map
+        vertex_to_mst.erase(cur);
+
+        // find vertex to form forced ege with (should only have one forced edge)
+        cur = (*forced_in_current[cur].begin()).first;
+        if(cur == start){
+            // the new vertex is the start of the path -> end iteration
+            vertex_to_mst.erase(cur);
+            // if the map is empty the mst was created, if not empty continue with the next vertex
+            if(vertex_to_mst.size() == 0){
+                break;
+            }
+            start = (*vertex_to_mst.begin()).first;
+            cur = start;
+            mst_cur = vertex_to_mst[start];
+            continue;
+
+        }
+        int mst_v = vertex_to_mst[cur]; // mst vertex of the current vertex
+        int mst_w = (*mst[mst_v].begin()).first; // mst vertex connected to v (should only exist one)
+        // add mst w to the cur mst vertex and update mst w, delete mst v
+        // if mst v and w are the same, only delete them (no self loops)
+        if(mst_cur != mst_w){
+            // if an edge already between cur and w, only change cost if new cost would be smaller
+            if(!mst[mst_cur].contains(mst_w) || mst[mst_v][mst_w] < mst[mst_cur][mst_w]){
+                mst[mst_cur][mst_w] = mst[mst_v][mst_w];
+                mst[mst_w][mst_cur] = mst[mst_v][mst_w];
+            }
+        }
+        mst[mst_w].erase(mst_v);
+        mst.erase(mst_v);
+
+        // erase vertex from map
+        vertex_to_mst.erase(cur);
+
+    }
+    // now we have the graph structure to construct the minimum spanning tree on
+    std::set<int> explored = { (*mst.begin()).first }; // set of mst vetices that are already in the mst
+    int min_cost = INT_MAX; // cost of the edge with the smallest cost
+    int min_vertex = -1; // edge with smallest cost
+    while(explored.size() != mst.size()){
+        // check every edge of the explored vertices and add the unexplored vertex with the snmallest cost
+        for(int v : explored){
+            for(const auto& [w, cost] : mst[v]){
+                if(cost < min_cost && !explored.contains(w)){ // check if the new edge is smaller and w is not already explored
+                    min_cost = cost;
+                    min_vertex = w;
+                }
+            }
+        }
+        // check if a vertex was found (if none found -> disjointed graph, no solution)
+        if(min_vertex == -1){
+            return false;
+        }
+        //std::cout << "add: " << min_vertex << " with: " << min_cost << "e.size: " << explored.size() << std::endl;
+        // if vertex was found, add it to explored, force non H edges and reset iteratoin values
+        explored.insert(min_vertex);
+        // increase cost
+        calculated_cost += min_cost; // workaround
+
+        min_cost = INT_MAX;
+        min_vertex = -1;
+    }
+
+    // cost of the mst was calculated, add it to the cost of the graph
+    current_weight += calculated_cost; // workaround
+
+    // function part of the workaround
+    std::function<bool()> subtract_cost = [calculated_cost]{
+        current_weight -= calculated_cost;
+        return false;
+    };
+    actions.push_back(subtract_cost);
+
     // debug print
+    std::cout << " Calculated Cost: " << calculated_cost << std::endl;
+
+    std::cout << " - AFTER -" << std::endl;
     std::cout << "MST" << std::endl;
     for(const auto& [v, w] : mst){
         std::cout << v << ": ";
-        for(int i : w){
-            std::cout << i << " ";
+        for(const auto& [e, cost] : w){
+            std::cout << e << "." << cost << " ";
         }
-        std::cout << "( ";
-        for(const auto& [e, c] : mst_W[v]){
-            std::cout << c << " ";
-        }
-        std::cout << " )" << std::endl;
+        std::cout << std::endl;
     }
     std::cout << "vertex to mst" << std::endl;
     for(const auto& [v, w] : vertex_to_mst){
@@ -796,5 +877,5 @@ bool solve_four_cycle(){
         std::cout << std::endl;
     }
 
-    return false;
+    return true;
 }
