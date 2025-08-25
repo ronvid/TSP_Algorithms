@@ -35,6 +35,8 @@ bool contract_triangle(int v, int w, int u);
 void check_for_four_cycle(int v);
 void remove_four_cycle(std::set<int> fc);
 bool solve_four_cycle();
+void check_for_live_six_cycle(int v);
+void erase_live_six_cycle(std::set<int> sc);
 
 void print_graph(std::map<int, std::map<int, bool>>* G);
 
@@ -65,6 +67,8 @@ std::vector<int> degree_two;
 std::set<std::set<int>> triangles;
 // set of 4-cycles simmilar to triangles
 std::set<std::set<int>> four_cycles;
+// set of live six cycles (six cycles with no forced edges and at least one forced neighbour)
+std::set<std::set<int>> live_six_cycles;
 
 // set of all vertices that are adjacent to a forced edge
 std::map<int, bool> forced_vertices;
@@ -221,6 +225,12 @@ void remove(int v, int w){
             break;
         }
     }
+    // check if v-w is part of a live six cycle -> remove cycle
+    for(std::set<int> sc : live_six_cycles){
+        if(sc.contains(v) && sc.contains(w)){
+            erase_live_six_cycle(sc);
+        }
+    }
 
     // removes edge v-w from G
     bool was_original = G[v][w];
@@ -324,6 +334,17 @@ bool force(int v, int w){
     // look if the newly forced vertices create a four cycle
     check_for_four_cycle(v);
     check_for_four_cycle(w);
+
+    // check if v and w are both part of a live six cycle -> remove six cycle from list
+    for(std::set<int> sc : live_six_cycles){
+        if(sc.contains(v) && sc.contains(w)){
+            erase_live_six_cycle(sc);
+        }
+    }
+
+    // look if the newly forced vertices create a live six cycle
+    check_for_live_six_cycle(v);
+    check_for_live_six_cycle(w);
 
     std::function<bool()> unforce = [v, w, was_original, v_not_previously_forced, w_not_previously_forced, weight]{
         std::cout << "action: unforce" << std::endl;
@@ -878,4 +899,62 @@ bool solve_four_cycle(){
     }
 
     return true;
+}
+
+void check_for_live_six_cycle(int v){
+    std::cout << "check for six cycle: " << v << std::endl;
+    // checks if v is part of a live six cycle
+    // check if v has 3 neighbours (all vertices of the sc need to have 3 neighbours)
+    if(G[v].size() != 3) return;
+    // check if v already in a live six cycle
+    for(std::set<int> sc : live_six_cycles){
+        if(sc.contains(v)) return;
+    }
+
+    // get unforced neighbours of v
+    int w = -1; int u;
+    for(const auto& [e, o] : G[v]){
+        if(forced_in_current[v].contains(e)) continue;
+        if(w == -1) w = e;
+        else u = e;
+    }
+    // check if w and u have 3 neighbours
+    if(G[w].size() != 3 || G[u].size() != 3) return;
+
+    // check every chain of unforced edges past w if it connects to u (only check that they dont go back)
+    for(const auto& [x, x_o] : G[w]){
+        if(x == v || forced_in_current[w].contains(x)) continue;
+        for(const auto& [y, y_o] : G[x]){
+            if(y == w || forced_in_current[x].contains(y)) continue;
+            for(const auto& [z, z_o] : G[y]){
+                if(z == x || forced_in_current[y].contains(z)) continue;
+                // if u is an unforced neighbour of z, a six cycle is possible
+                if(G[z].contains(u) && !forced_in_current[z].contains(u)){
+                    std::set<int> sc = {v, w, u, x, y, z}; // possible six cycle
+                    if(sc.size() != 6) continue; // enshures that no vertex appears twice in the cycle
+
+                    // life six cycle found -> add to set an return
+                    live_six_cycles.insert(sc);
+
+                    std::function<bool()> release_six_cycle = [sc]{
+                        std::cout << "action: release live six cycle" << std::endl;
+                        live_six_cycles.erase(sc);
+                        return false;
+                    };
+                    actions.push_back(release_six_cycle);
+                    return;
+                }
+            }
+        }
+    }
+}
+
+void erase_live_six_cycle(std::set<int> sc){
+    live_six_cycles.erase(sc);
+
+    std::function<bool()> unerase_sc = [sc]{
+        live_six_cycles.insert(sc);
+        return false;
+    };
+    actions.push_back(unerase_sc);
 }
