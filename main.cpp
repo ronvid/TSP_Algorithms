@@ -18,25 +18,26 @@ int main(){
     add_edge(&input, &input_weights, 0, 3, 3);
     add_edge(&input, &input_weights, 1, 2, 4);
     add_edge(&input, &input_weights, 2, 3, 5);
-    add_edge(&input, &input_weights, 3, 1, 6);*/
-
+    add_edge(&input, &input_weights, 3, 1, 6);
+*/
+/*
     //basic graph
-//     add_edge(&input, &input_weights, 0, 1, 1);
-//     add_edge(&input, &input_weights, 1, 2, 2);
-//     add_edge(&input, &input_weights, 2, 3, 3);
-//     add_edge(&input, &input_weights, 3, 4, 4);
-//     add_edge(&input, &input_weights, 4, 5, 5);
-//     add_edge(&input, &input_weights, 5, 6, 6);
-//     add_edge(&input, &input_weights, 6, 7, 7);
-//     add_edge(&input, &input_weights, 7, 8, 8);
-//     add_edge(&input, &input_weights, 8, 9, 9);
-//     add_edge(&input, &input_weights, 9, 0, 10);
-//     add_edge(&input, &input_weights, 1, 3, 11);
-//     add_edge(&input, &input_weights, 4, 6, 12);
-//     add_edge(&input, &input_weights, 7, 9, 13);
-//     add_edge(&input, &input_weights, 0, 10, 14);
-//     add_edge(&input, &input_weights, 10, 2, 15);
-//
+    add_edge(&input, &input_weights, 0, 1, 1);
+    add_edge(&input, &input_weights, 1, 2, 2);
+    add_edge(&input, &input_weights, 2, 3, 3);
+    add_edge(&input, &input_weights, 3, 4, 4);
+    add_edge(&input, &input_weights, 4, 5, 5);
+    add_edge(&input, &input_weights, 5, 6, 6);
+    add_edge(&input, &input_weights, 6, 7, 7);
+    add_edge(&input, &input_weights, 7, 8, 8);
+    add_edge(&input, &input_weights, 8, 9, 9);
+    add_edge(&input, &input_weights, 9, 0, 10);
+    add_edge(&input, &input_weights, 1, 3, 11);
+    add_edge(&input, &input_weights, 4, 6, 12);
+    add_edge(&input, &input_weights, 7, 9, 13);
+    add_edge(&input, &input_weights, 0, 10, 14);
+    add_edge(&input, &input_weights, 10, 2, 15);*/
+
 /*
     add_edge(&input, &input_weights, 1 , 2 , 1 );
     add_edge(&input, &input_weights, 1 , 3 , 2 );
@@ -57,9 +58,9 @@ int main(){
     add_edge(&input, &input_weights, 11, 12, 17);
     add_edge(&input, &input_weights, 12, 1 , 18);
 */
-
+/*
     // double fc
-/*    add_edge(&input, &input_weights, 1 , 2 , 1 );
+    add_edge(&input, &input_weights, 1 , 2 , 1 );
     add_edge(&input, &input_weights, 1 , 3 , 2 );
     add_edge(&input, &input_weights, 1 , 7 , 3 );
     add_edge(&input, &input_weights, 2 , 4 , 4 );
@@ -72,8 +73,8 @@ int main(){
     add_edge(&input, &input_weights, 7 , 8 , 11);
     add_edge(&input, &input_weights, 7 , 10, 12);
     add_edge(&input, &input_weights, 8 , 9 , 13);
-    add_edge(&input, &input_weights, 9 , 10, 14);
-*/
+    add_edge(&input, &input_weights, 9 , 10, 14);*/
+
 /*
     // test mst
     add_edge(&input, &input_weights, 1 , 2 , 1 );
@@ -99,8 +100,8 @@ int main(){
     add_edge(&input, &input_weights, 15, 11, 0 );
     add_edge(&input, &input_weights, 16, 12, 0 );
     add_edge(&input, &input_weights, 17, 10, 0 );
-    add_edge(&input, &input_weights, 18, 9 , 0 );
-*/
+    add_edge(&input, &input_weights, 18, 9 , 0 );*/
+/*
     // complex fc mst test
     add_edge(&input, &input_weights, 0 , 1 , 1 );
     add_edge(&input, &input_weights, 0 , 2 , 3 );
@@ -156,7 +157,28 @@ int main(){
     add_edge(&input, &input_weights, 23, 64, 1 ); add_edge(&input, &input_weights, 64, 32, 1 );
     add_edge(&input, &input_weights, 26, 65, 1 ); add_edge(&input, &input_weights, 65, 29, 1 );
     add_edge(&input, &input_weights, 33, 66, 1 ); add_edge(&input, &input_weights, 66, 30, 1 );
-    add_edge(&input, &input_weights, 35, 67, 1 ); add_edge(&input, &input_weights, 67, 31, 1 );
+    add_edge(&input, &input_weights, 35, 67, 1 ); add_edge(&input, &input_weights, 67, 31, 1 );*/
+
+    // simple six cycle
+    add_edge(&input, &input_weights, 1 , 2 , 1 );
+    add_edge(&input, &input_weights, 2 , 3 , 2 );
+    add_edge(&input, &input_weights, 3 , 6 , 3 );
+    add_edge(&input, &input_weights, 1 , 4 , 4 );
+    add_edge(&input, &input_weights, 4 , 5 , 5 );
+    add_edge(&input, &input_weights, 5 , 6 , 6 );
+    add_edge(&input, &input_weights, 1 , 13, 7 );
+    add_edge(&input, &input_weights, 2 , 8 , 8 );
+    add_edge(&input, &input_weights, 3 , 9 , 9 );
+    add_edge(&input, &input_weights, 6 , 10, 10);
+    add_edge(&input, &input_weights, 5 , 11, 11);
+    add_edge(&input, &input_weights, 4 , 12, 12);
+    add_edge(&input, &input_weights, 7 , 8 , 13);
+    add_edge(&input, &input_weights, 8 , 9 , 14);
+    add_edge(&input, &input_weights, 9 , 10, 15);
+    add_edge(&input, &input_weights, 10, 11, 16);
+    add_edge(&input, &input_weights, 11, 12, 17);
+    add_edge(&input, &input_weights, 12, 7 , 18);
+    add_edge(&input, &input_weights, 13, 7 , 0);
 
 
     ShortestHamiltonianCycle(&input, &input_weights, &forced_edges, &cycle_cost);
