@@ -170,10 +170,10 @@ bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input,
             i++;
         }
         // if v has only two neighbours -> only one triangle possible
-        if(G[a[0]].contains(a[1])) triangles.insert({v, a[0], a[1]});
+        if(G[a[0]].contains(a[1])) add_triangle(v, a[0], a[1]);
         if(G[v].size() == 3){
-            if(G[a[1]].contains(a[2])) triangles.insert({v, a[1], a[2]});
-            if(G[a[2]].contains(a[0])) triangles.insert({v, a[2], a[0]});
+            if(G[a[1]].contains(a[2])) add_triangle(v, a[1], a[2]);
+            if(G[a[2]].contains(a[0])) add_triangle(v, a[2], a[0]);
         }
 
         // maintain vertex id
