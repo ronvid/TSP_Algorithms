@@ -67,6 +67,8 @@ std::vector<int> degree_two;
 std::set<std::set<int>> triangles;
 // set of 4-cycles simmilar to triangles
 std::set<std::set<int>> four_cycles;
+// subset of four cycles, where not every neighbour is forced
+std::set<std::set<int>> unforced_four_cylces;
 // set of live six cycles (six cycles with no forced edges and at least one forced neighbour)
 std::set<std::set<int>> live_six_cycles;
 
@@ -94,9 +96,9 @@ std::function<bool()> main_ch = []{
     }
 
     // Step 2
-    // if 4-cycles form a collection of disjoint 4-cycles
+    // if forced 4-cycles form a collection of disjoint 4-cycles, and all 4-cycles are fully forced
     // every vertex is part of exactly one 4-cycle
-    if(G.size() == four_cycles.size() * 4){
+    if(G.size() == four_cycles.size() * 4 && unforced_four_cylces.size() == 0){
         return solve_four_cycle();
     }
 
@@ -218,9 +220,9 @@ void remove(int v, int w){
             remove_triangle(v,w,e);
         }
     }
-    // check if v-w is part of a four cycle -> remove four cycle
+    // check if v or w is part of a four cycle -> remove four cycle
     for(std::set<int> fc : four_cycles){
-        if(fc.contains(v) && fc.contains(w)){
+        if(fc.contains(v) || fc.contains(w)){
             remove_four_cycle(fc);
             break;
         }
@@ -331,14 +333,36 @@ bool force(int v, int w){
     int weight = W[v][w];
     current_weight += weight;
 
+    // if the forced edge lies within a four cycle remove it from the list
+    for(std::set<int> fc : four_cycles){
+        if(fc.contains(v) && fc.contains(w)){
+            remove_four_cycle(fc);
+            break;
+        }
+    }
+    // if one vertex is part of an unforced 4-cycle -> remove fc so it can be added as forced fc
+    for(std::set<std::set<int>>::iterator fc = unforced_four_cylces.begin(); fc != unforced_four_cylces.end();){
+        if((*fc).contains(v) || (*fc).contains(w)){
+            remove_four_cycle(*fc);
+            fc = unforced_four_cylces.begin(); // hack to avoid seg-fault (worst case iterate the list 3 times) TODO better way for this?
+        }
+        else{
+            fc++;
+        }
+    }
+
     // look if the newly forced vertices create a four cycle
     check_for_four_cycle(v);
     check_for_four_cycle(w);
 
     // check if v and w are both part of a live six cycle -> remove six cycle from list
-    for(std::set<int> sc : live_six_cycles){
-        if(sc.contains(v) && sc.contains(w)){
-            erase_live_six_cycle(sc);
+    for(std::set<std::set<int>>::iterator sc = live_six_cycles.begin(); sc != live_six_cycles.end();){
+        if((*sc).contains(v) && (*sc).contains(w)){
+            erase_live_six_cycle(*sc);
+            sc = live_six_cycles.begin();
+        }
+        else{
+            sc++; // simmilar hack to 4-cycle checking TODO better way?
         }
     }
 
@@ -438,6 +462,10 @@ bool contract(int v){
             add_triangle(w, u, e);
         }
     }
+
+    // check if u and w are 4-cycle edges
+    check_for_four_cycle(u);
+    check_for_four_cycle(w);
 
     std::function<bool()> uncontract = [v, u, w]{
         std::cout << "action: uncontract" << std::endl;
@@ -667,65 +695,71 @@ void check_for_four_cycle(int v){
     for(std::set<int> c : four_cycles){
         if(c.contains(v)) return;
     }
-    // check if v has two unforced edges
-    int x = -1; int y = -1;
+    // check if v has two unforced edges, that have three edges
+    int w = -1; int u = -1;
     for(const auto& [e, o] : G[v]){
-        if(forced_in_current[v].contains(e)) continue;
-        if(x == -1) x = e;
-        else y = e;
+        if(forced_in_current[v].contains(e) || G[e].size() != 3) continue;
+        if(w == -1) w = e;
+        else u = e;
     }
-    if(y == -1) return; // more than one forced edge
+    if(u == -1) return; // more than one forced edge or w and u don't have three edges
 
-    for(const auto& [w, b] : forced_vertices){
-        if(w == v) continue;
-        int w1 = -1; int w2 = -1;
+    // check if w and u have a common vertex (that is not v) (w-x and u-x are unforced)
+    int x = -1;
+    for(const auto& [e, o] : G[w]){
+        if(forced_in_current[w].contains(e) || forced_in_current[u].contains(e)) continue;
+        if(e != v && G[u].contains(e)){ x = e; break;}
+    }
+    if(x == -1) return; // w and u dont share an unforced edge
+
+    std::set<int> fc = {v,w,u,x};
+    bool unforced = false;
+    // if v and x are forced -> force neighbouring edges of w and u and add to four cycles
+    if(forced_vertices.contains(v) && forced_vertices.contains(x)){
+        std::cout << "add forced fc: " << v << " " << w << " " << u << " " << x << std::endl;
+        four_cycles.insert(fc);
+        //force neighbours of w and u
         for(const auto& [e, o] : G[w]){
-            if(forced_in_current[w].contains(e)) continue;
-            if(w1 == -1) w1 = e;
-            else w2 = e;
+            if(e != v && e != x){ force(w,e); break;}
         }
-        if(w2 == -1) continue;
-        // check if v and w make a four cycle
-        std::cout << "possible: " << w << " w1: " << w1 << " w2: " << w2 << " x: " << x << " y: " << y << std::endl;
-        if( (x == w1 && y == w2) || (x == w2 && y == w1) ){
-            // get other neighbouring vertices
-            int a = -1; int b = -1;
-            for(const auto& [e, o] : G[x]){
-                if(e != v && e != w) a = e;
-            }
-            for(const auto& [e, o] : G[y]){
-                if(e != v && e != w) b = e;
-            }
-            if(x == -1 || y == -1) return; // no neighbouring vertices
-
-            // add 4-cycle to list
-            std::cout << "found fc: " << v << " " << w << " " << x << " " << y << std::endl;
-            std::set<int> fc = {v,w,x,y};
-            four_cycles.insert(fc);
-
-            std::function<bool()> remove_fc = [fc]{
-                four_cycles.erase(fc);
-                return false;
-            };
-            actions.push_back(remove_fc);
-
-            // force adjacent edges
-            force(x,a);
-            force(y,b);
-
-            return;
+        for(const auto& [e, o] : G[u]){
+            if(e != v && e != x){ force(u,e); break;}
         }
-
-
     }
+    // if both w and u are forced -> was alread a four cycle TODO remove?
+    // check if w or u are forced -> add 4-cycle to unforced 4-cycles
+    else if(forced_vertices.contains(w) || forced_vertices.contains(u)){
+        std::cout << "add unforced fc: " << v << " " << w << " " << u << " " << x << std::endl;
+        four_cycles.insert(fc);
+        unforced_four_cylces.insert(fc);
+        unforced = true;
+    }
+    // neither w, u or x are forced, no viable 4-cycle
+    else{
+        return;
+    }
+
+    std::function<bool()> erase_four_cycle = [fc, unforced]{
+        four_cycles.erase(fc);
+        if(unforced) unforced_four_cylces.erase(fc);
+        return false;
+    };
+    actions.push_back(erase_four_cycle);
 }
 
 void remove_four_cycle(std::set<int> fc){
     std::cout << "remove four cycle: " << *fc.begin() << " " << *++fc.begin() << " " << *++++fc.begin() << " " << *++++++fc.begin() << std::endl;
     four_cycles.erase(fc);
 
-    std::function<bool()> unremove_fc = [fc]{
+    bool unforced = false;
+    if(unforced_four_cylces.contains(fc)){
+        unforced = true;
+        unforced_four_cylces.erase(fc);
+    }
+
+    std::function<bool()> unremove_fc = [fc, unforced]{
         four_cycles.insert(fc);
+        if(unforced) unforced_four_cylces.insert(fc);
         return false;
     };
     actions.push_back(unremove_fc);
@@ -912,12 +946,14 @@ void check_for_live_six_cycle(int v){
     }
 
     // get unforced neighbours of v
-    int w = -1; int u;
+    int w = -1; int u = -1;
     for(const auto& [e, o] : G[v]){
         if(forced_in_current[v].contains(e)) continue;
         if(w == -1) w = e;
         else u = e;
     }
+    if(u == -1) return; // v has less than 2 unforced neighbours
+
     // check if w and u have 3 neighbours
     if(G[w].size() != 3 || G[u].size() != 3) return;
 
@@ -936,6 +972,12 @@ void check_for_live_six_cycle(int v){
                     // life six cycle found -> add to set an return
                     live_six_cycles.insert(sc);
 
+                    std::cout << "live six cycle found: ";
+                    for(int i : sc){
+                        std::cout << i << " ";
+                    }
+                    std::cout << std::endl;
+
                     std::function<bool()> release_six_cycle = [sc]{
                         std::cout << "action: release live six cycle" << std::endl;
                         live_six_cycles.erase(sc);
@@ -950,6 +992,7 @@ void check_for_live_six_cycle(int v){
 }
 
 void erase_live_six_cycle(std::set<int> sc){
+    std::cout << "erase life six cycle" << std::endl;
     live_six_cycles.erase(sc);
 
     std::function<bool()> unerase_sc = [sc]{
