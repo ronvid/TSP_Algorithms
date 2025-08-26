@@ -4,6 +4,7 @@
 #include <functional>
 #include <climits>
 #include <iostream> //TODO debug only ig
+#include <stdexcept> // TODO remove ?
 
 #include "GraphUtility.hpp"
 
@@ -105,19 +106,76 @@ std::function<bool()> main_ch = []{
     // Step 3
     std::cout << " --- Step 3 --- " << std::endl;
     // Now every vertex is degree three and forced edges form a matching
-    // pick edge for rcursive search (optimaly one that is adjacent to a forced edge)
+    // pick edge for recursive search
     int v;
-    if(forced_vertices.size() > 0){
+    int w;
+    // a: unforced 4-cycle ->pick one of the unforced neighbours
+    if(unforced_four_cylces.size() > 0){
+        std::cout << "recursive four_cycle ; size: " << unforced_four_cylces.size() << " ";
+        std::set<int> fc = *unforced_four_cylces.begin();
+        for(int i : fc) std::cout << i << " "; std::cout << std::endl;
+        //find an unforced edge in fc
+        for(int i : fc){
+            if(!forced_vertices.contains(i)){
+                for(const auto& [e, o] : G[i]) if(!fc.contains(e)){ v = i; w = e; break; }
+            }
+        }
+    }
+    // a': take live six cycle with most forced vertices, v is a forced vertex, w should at best also be forced
+    else if(live_six_cycles.size() > 0){
+        std::cout << "recursive six_cycle" << std::endl;
+        int highest_forced_count = 0;
+        int forced_count = 0;
+        std::set<int> highest_sc;
+        for(std::set<int> sc : live_six_cycles){
+            for(int i : sc){ if(forced_vertices.contains(i)) forced_count++; }
+            if(forced_count > highest_forced_count){
+                highest_forced_count = forced_count;
+                highest_sc = sc;
+            }
+        }
+        // six cycle with highest amount of forced edges was found
+        // check if any two neighbouring vertices a and b can be found that are both forced
+        for(int a : highest_sc){
+            if(forced_vertices.contains(a)){
+                for(int b : highest_sc){
+                    // check that a and b are different, b is also forced, but they shouldnt select a forced edge (possible if forced edge "parallel" to 6-cycle)
+                    if(a != b && forced_vertices.contains(b) && !forced_in_current[a].contains(b)){
+                        v = a; w = b;
+                        goto recursive_edge_found;
+                    }
+                }
+            }
+        }
+        // pick any forced vertex from sc and an unforced edge
+        for(int a : highest_sc){
+            if(forced_vertices.contains(a)){
+                for(const auto& [e, o] : G[a]){
+                    if(highest_sc.contains(e)){
+                        v = a; w = e;
+                        goto recursive_edge_found;
+                    }
+                }
+            }
+        }
+    }
+
+    // b: pick an edge adjacent to a forced edge
+    else if(forced_vertices.size() > 0){
+        std::cout << "recursive forced vertices" << std::endl;
         // takes first vertex from forced vertices
         v = (*forced_vertices.begin()).first;
+        w = get_unforced_neighbour(v);
     }
+    // c: pick any edge (here the first one found in the graph)
     else{
+        std::cout << "recursive any" << std::endl;
         // takes first vertex from graph
         v = (*G.begin()).first;
+        w = get_unforced_neighbour(v);
     }
 
-    int w = get_unforced_neighbour(v);
-
+recursive_edge_found:
     std::function<bool()> continuation = [v,w]{
         std::cout << "action: continuation" << std::endl;
         // After searching first recursive subgraph
@@ -220,17 +278,33 @@ void remove(int v, int w){
             remove_triangle(v,w,e);
         }
     }
-    // check if v or w is part of a four cycle -> remove four cycle
+    // check if v is part of a four cycle -> remove four cycle
     for(std::set<int> fc : four_cycles){
-        if(fc.contains(v) || fc.contains(w)){
+        if(fc.contains(v)){
             remove_four_cycle(fc);
             break;
         }
     }
-    // check if v-w is part of a live six cycle -> remove cycle
+    // check if w is part of a four cycle -> remove four cycle
+    for(std::set<int> fc : four_cycles){
+        if(fc.contains(w)){
+            remove_four_cycle(fc);
+            break;
+        }
+    }
+
+    // check if v is part of a live six cycle -> remove cycle
     for(std::set<int> sc : live_six_cycles){
-        if(sc.contains(v) && sc.contains(w)){
+        if(sc.contains(v)){
             erase_live_six_cycle(sc);
+            break;
+        }
+    }
+    // check if w is part of a live six cycle -> remove cycle
+    for(std::set<int> sc : live_six_cycles){
+        if(sc.contains(w)){
+            erase_live_six_cycle(sc);
+            break;
         }
     }
 
@@ -357,7 +431,7 @@ bool force(int v, int w){
 
     // check if v and w are both part of a live six cycle -> remove six cycle from list
     for(std::set<std::set<int>>::iterator sc = live_six_cycles.begin(); sc != live_six_cycles.end();){
-        if((*sc).contains(v) && (*sc).contains(w)){
+        if((*sc).contains(v) && (*sc).contains(w)){ // NOTE does not need to check that the forced edge might be parallel, will reinclude it anyway
             erase_live_six_cycle(*sc);
             sc = live_six_cycles.begin();
         }
@@ -467,6 +541,10 @@ bool contract(int v){
     check_for_four_cycle(u);
     check_for_four_cycle(w);
 
+    // check if u and w are six-cycle edges
+    check_for_live_six_cycle(u);
+    check_for_live_six_cycle(w);
+
     std::function<bool()> uncontract = [v, u, w]{
         std::cout << "action: uncontract" << std::endl;
         G[u].erase(w);
@@ -516,6 +594,7 @@ int get_unforced_neighbour(int v){ // TODO check if this functions is even necca
         }
     }
     // TODO maybe assertion here
+    throw std::invalid_argument( " unforced neighbour returned -1"); // TODO remove or something
     return -1;
 }
 
@@ -557,6 +636,7 @@ bool contract_triangle(int v, int w, int u){
         }
         else{
             std::cout << "solve directly!" << va + wu << " " << wb + uv << " " <<  uc + vw << " " << std::endl;
+            // TODO TODO if one edge is forced this shit doesnt work
             // remove edge of a that has the highest cost and let deg_2 handle the rest
             // if it can be removed is is not false, if not possible, check others
             if(va + wu >= wb + uv && va + wu >= uc + vw && safely_remove(v,a)){
@@ -565,7 +645,7 @@ bool contract_triangle(int v, int w, int u){
             else if(wb + uv >= va + wu && wb + uv >= uc + vw && safely_remove(w,b)){
                 actions.push_back(main_ch);
             }
-            else if(uc + vw >= va + wu && uc + vw >= wb + uv && safely_remove(w,c)){
+            else if(uc + vw >= va + wu && uc + vw >= wb + uv && safely_remove(u,c)){
                 actions.push_back(main_ch);
             }
             // if none could be removed -> no solution
@@ -580,14 +660,17 @@ bool contract_triangle(int v, int w, int u){
     // insert edge x-a
     G[x][a] = G[a][x] = false;
     W[x][a] = W[a][x] = va + wu;
-    if(forced_in_current[v].contains(a)){ // if v-a was forced -> force x-a
+    // if v-a or w-u was forced -> force x-a (also force both v-a and w-u in case any was unforced)
+    if(forced_in_current[v].contains(a) || forced_in_current[w].contains(u)){
+        force(v,a); force(w,u);
         f_a = true;
     }
 
     // insert edge x-b, check if it already exists
     if(G[x].contains(b)){ // a and b are the same
         if(!forced_in_current[x].contains(b)){ // previous edge was not forced use x-b if forced or edge with lower cost
-            if(forced_in_current[w].contains(b)){ // overwrite if wb was forced
+            if(forced_in_current[w].contains(b) || forced_in_current[v].contains(u)){ // overwrite if wb was forced
+                force(w,b); force(v,u);
                 W[x][b] = wb + uv;
                 f_b = true;
             }
@@ -602,7 +685,8 @@ bool contract_triangle(int v, int w, int u){
     else{
         G[x][b] = G[b][x] = false;
         W[x][b] = W[b][x] = wb + uv;
-        if(forced_in_current[w].contains(b)){
+        if(forced_in_current[w].contains(b) || forced_in_current[v].contains(u)){
+            force(w,b); force(v,u);
             f_b = true;
         }
     }
@@ -610,7 +694,8 @@ bool contract_triangle(int v, int w, int u){
     // insert edge x-c, check if it already exists
     if(G[x].contains(c)){ // a/b and c are the same
         if(!forced_in_current[x].contains(c)){ // previous edge was not forced use x-c if forced or edge with lower cost
-            if(forced_in_current[u].contains(c)){ // overwrite if wb was forced
+            if(forced_in_current[u].contains(c) || forced_in_current[v].contains(w)){ // overwrite if wb was forced
+                force(u,c); force(v,w);
                 W[x][c] = uc + vw;
                 f_c = true;
             }
@@ -625,7 +710,8 @@ bool contract_triangle(int v, int w, int u){
     else{
         G[x][c] = G[c][x] = false;
         W[x][c] = W[c][x] = uc + vw;
-        if(forced_in_current[u].contains(c)){
+        if(forced_in_current[u].contains(c) || forced_in_current[v].contains(w)){
+            force(u,c); force(v,w);
             f_c = true;
         }
     }
@@ -658,6 +744,21 @@ bool contract_triangle(int v, int w, int u){
         return false;
     };
     actions.push_back(uncontract_triangle);
+
+    // check if the newly created edge is part of a new triangle
+    // create array with neighbours of x
+    int n[G[x].size()]; int i = 0;
+    for(const auto& [e, o] : G[x]){
+        n[i] = e;
+        i++;
+    }
+    // if x has only two neighbours -> only one triangle possible
+    if(G[n[0]].contains(n[1])) add_triangle(x, n[0], n[1]);
+    if(G[x].size() == 3){
+        if(G[n[1]].contains(n[2])) add_triangle(x, n[1], n[2]);
+        if(G[n[2]].contains(n[0])) add_triangle(x, n[2], n[0]);
+    }
+
     actions.push_back(main_ch);
 
     return false;
@@ -992,7 +1093,8 @@ void check_for_live_six_cycle(int v){
 }
 
 void erase_live_six_cycle(std::set<int> sc){
-    std::cout << "erase life six cycle" << std::endl;
+    std::cout << "erase live six cycle ";
+    for(int i : sc){std::cout << i << " ";} std::cout << std::endl;
     live_six_cycles.erase(sc);
 
     std::function<bool()> unerase_sc = [sc]{
