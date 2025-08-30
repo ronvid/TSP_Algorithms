@@ -99,8 +99,7 @@ std::function<bool()> main_ch = []{
 };
 
 
-bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input,
-                              std::map<int, std::map<int, int>>* input_weights,
+bool ShortestHamiltonianCycle(std::map<int, std::map<int, int>>* input_weights,
                               std::map<int, std::map<int, bool>>* forced_edges, int* cost){
 
     // copy all values from the input graph to the graph used by the algorithm
@@ -108,7 +107,7 @@ bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input,
     // the forced edges graph is used to retun the forced edges, cost returns the cost
     // add all degree two vertices to the degree_two set
     // check for any isolated/degree one vertices
-    for(const auto& [v, e] : *input){
+    for(const auto& [v, e] : *input_weights){
         // vertex is isolated or degree one -> no hamiltonian cycle possible
         if(e.size() < 2){
             return false;
@@ -116,11 +115,11 @@ bool ShortestHamiltonianCycle(std::map<int, std::map<int, bool>>* input,
         else if(e.size() == 2){
             degree_two.push_back(v);
         }
-        for(const auto& [w, og] : e){
+        for(const auto& [w, c] : e){
             // create edges in copy graph
             G[v][w] = true;
             // add weights to weight graph
-            W[v][w] = (*input_weights)[v][w];
+            W[v][w] = c;
         }
 
         // inivtialize vertices in forced_in_input/current graphs
