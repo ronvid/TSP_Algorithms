@@ -1,16 +1,17 @@
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <vector>
 #include <climits>
 
 // the weight graph
-std::map<int, std::map<int, int>> W;
+std::unordered_map<int, std::unordered_map<int, int>> W;
 
 // the recursivley constructed soluion graph
-std::map<int, std::set<int>> R;
+std::unordered_map<int, std::set<int>> R;
 
 // the best weight solution graph
-std::map<int, std::map<int, bool>>* S;
+std::unordered_map<int, std::unordered_map<int, bool>>* S;
 
 // set of added vertices
 std::set<int> added_vertices;
@@ -69,8 +70,8 @@ void recursive_bruteforce(int v){
     vertex_stack.pop_back();
 }
 
-void BruteforceHamiltonianCycle(std::map<int, std::map<int, int>>* input_weight,
-                                std::map<int, std::map<int, bool>>* solution, int* cost){
+void BruteforceHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weight,
+                                std::unordered_map<int, std::unordered_map<int, bool>>* solution, int* cost){
 
     // assign weight and solution graph
     W = *input_weight;
