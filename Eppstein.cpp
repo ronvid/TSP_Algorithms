@@ -58,6 +58,18 @@ std::function<bool()> main_ch = []{
 bool Eppstein::ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weights,
                               std::unordered_map<int, std::unordered_map<int, bool>>* forced_edges, int* cost){
 
+    // initialize/reset used variables
+    current_weight = 0;
+    min_found_weight = INT_MAX;
+    actions = {};
+
+    G.clear();
+    W.clear();
+    forced_in_input.clear();
+    forced_in_current.clear();
+    degree_two.clear();
+    forced_vertices.clear();
+
     // copy all values from the input graph to the graph used by the algorithm
     // copy weights from input weight graph
     // the forced edges graph is used to retun the forced edges, cost returns the cost
