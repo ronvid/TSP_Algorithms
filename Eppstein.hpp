@@ -22,6 +22,8 @@ class Eppstein{
     static bool contract(int v);
     static bool handle_degree_two();
 
+    static bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weights, std::unordered_map<int, std::unordered_map<int, bool>>* forced_edges, int* cost);
+
     //void print_graph(std::map<int, std::map<int, bool>>* G);
 
     // a copy of the given graph to run the algorithm on
