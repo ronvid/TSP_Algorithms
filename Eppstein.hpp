@@ -1,3 +1,6 @@
+#ifndef EPPSTEIN_HPP
+#define EPPSTEIN_HPP
+
 #include <map>
 #include <set>
 #include <vector>
@@ -401,3 +404,5 @@ int get_unforced_neighbour(int v){ // TODO check if this functions is even necca
 }
 
 }
+
+#endif
