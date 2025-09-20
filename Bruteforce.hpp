@@ -10,7 +10,7 @@
 namespace Bruteforce{
 
 void recursive_bruteforce(int v);
-void BruteforceHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weight, std::unordered_map<int, std::unordered_map<int, bool>>* solution, int* cost);
+bool BruteforceHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weight, std::unordered_map<int, std::unordered_map<int, bool>>* solution, int* cost);
 
 // the weight graph
 std::unordered_map<int, std::unordered_map<int, int>> W;
@@ -36,6 +36,9 @@ int current_cost = 0;
 // the best weight of a solution graph
 int min_found_cost = INT_MAX;
 
+// was any solution found
+bool sol_found = false;
+
 
 void recursive_bruteforce(int v){
     //if v is the same as the first added vertex and there are n vertices added -> solution
@@ -43,6 +46,7 @@ void recursive_bruteforce(int v){
         if(current_cost < min_found_cost){
             min_found_cost = current_cost;
             // current best solution found, copy R to S
+            sol_found = true;
             S->clear();
             for(const auto& [v, e] : R){
                 for(int w : e){
@@ -79,7 +83,7 @@ void recursive_bruteforce(int v){
     vertex_stack.pop_back();
 }
 
-void BruteforceHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weight,
+bool BruteforceHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weight,
                                 std::unordered_map<int, std::unordered_map<int, bool>>* solution, int* cost){
 
     // assign weight and solution graph
@@ -98,6 +102,8 @@ void BruteforceHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, 
     recursive_bruteforce(v);
     // copy found bets weight
     *cost = min_found_cost;
+
+    return sol_found;
 }
 
 }
