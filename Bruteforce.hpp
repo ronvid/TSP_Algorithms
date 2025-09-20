@@ -86,6 +86,14 @@ void recursive_bruteforce(int v){
 bool BruteforceHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weight,
                                 std::unordered_map<int, std::unordered_map<int, bool>>* solution, int* cost){
 
+    // reset values
+    R.clear();
+    added_vertices.clear();
+    vertex_stack.clear();
+    current_cost = 0;
+    min_found_cost = INT_MAX;
+    sol_found = false;
+
     // assign weight and solution graph
     W = *input_weight;
     S = solution;
