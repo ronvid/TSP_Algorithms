@@ -31,7 +31,6 @@ void copy_graph(std::unordered_map<int, std::unordered_map<int, bool>>* G, std::
 
 // clears values from a given graph
 void delete_graph(std::unordered_map<int, std::unordered_map<int, bool>>* s){
-    std::cout << s->size() << std::endl;
     s->clear();
 }
 
