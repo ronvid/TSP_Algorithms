@@ -7,6 +7,8 @@
 #include <vector>
 #include <climits>
 
+namespace Bruteforce{
+
 void recursive_bruteforce(int v);
 void BruteforceHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weight, std::unordered_map<int, std::unordered_map<int, bool>>* solution, int* cost);
 
@@ -96,6 +98,8 @@ void BruteforceHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, 
     recursive_bruteforce(v);
     // copy found bets weight
     *cost = min_found_cost;
+}
+
 }
 
 #endif
