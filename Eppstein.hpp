@@ -166,9 +166,9 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
             if(current_weight < min_found_weight){
                 min_found_weight = current_weight;
                 //std::cout << "delete!" << std::endl;
-                //delete_graph(forced_edges);
+                delete_graph(forced_edges);
                 //std::cout << "copy!" << std::endl;
-                //copy_graph(&forced_in_input, forced_edges);
+                copy_graph(&forced_in_input, forced_edges);
                 //std::cout << "done!" << std::endl;
             }
         }
