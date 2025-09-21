@@ -4,6 +4,7 @@
 #include <map>
 #include <unordered_map>
 #include <iostream>
+#include <fstream>
 
 // adds an edge between v and w with cost c
 // since the graph structure does not allow parallel edges, the edge with the smaller cost will be used
@@ -20,5 +21,8 @@ void print_graph(std::unordered_map<int, std::unordered_map<int, bool>>* G);
 
 // prints the given weight graph
 void print_graph(std::unordered_map<int, std::unordered_map<int, int>>* W);
+
+// outputs the graph as a dot file
+void to_dot(std::unordered_map<int, std::unordered_map<int, int>>* W, std::unordered_map<int, std::unordered_map<int, bool>>* forced, std::string file_name);
 
 #endif

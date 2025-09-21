@@ -55,3 +55,30 @@ void print_graph(std::unordered_map<int, std::unordered_map<int, int>>* W){
         std::cout << std::endl;
     }
 }
+
+void to_dot(std::unordered_map<int, std::unordered_map<int, int>>* W, std::unordered_map<int, std::unordered_map<int, bool>>* forced, std::string file_name){
+    // create a graph that saves which edges have already been written to the file (to avoid writing edges twice), probable not optimal, but efficiency does not matter here
+    std::unordered_map<int, std::unordered_map<int, int>> G;
+
+    std::ofstream dot_file;
+    dot_file.open("vis/" + file_name + ".gv");
+    dot_file << "graph g {\n";
+    for(const auto& [v, e] : *W){
+        for(const auto& [w, c] : e){
+
+            // check if edge was not already added
+            if(G[v].contains(w)) continue;
+            // add edge to G
+            add_edge(&G, v, w, c);
+
+            // add edge to file
+            dot_file << v << " -- " << w << "[label=" << c << "]";
+            if((*forced)[v].contains(w)){
+                dot_file << " [style=bold]";
+            }
+            dot_file << "\n";
+        }
+    }
+    dot_file << "} \n";
+    dot_file.close();
+}
