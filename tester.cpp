@@ -59,6 +59,11 @@ bool compare_algorithms(int size, bool always_show=false){
         print_graph(&e_edges);
         std::cout << "Bruteforce:" << std::endl;
         print_graph(&b_edges);
+
+        // create dot files with the graphs
+        to_dot(generated, &e_edges, "eppstein");
+        to_dot(generated, &b_edges, "bruteforce");
+        std::cout << "Graphs have been written to .gv files" << std::endl;
     }
 
     // dealloc generated graph
