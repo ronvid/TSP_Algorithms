@@ -11,8 +11,10 @@ bool compare_algorithms(int size, bool always_show=false){
     // success flag
     bool success = true;
 
+    // generate seed for
+    int seed = std::rand();
+
     // generate graph of given size
-    int seed = std::time({});
     std::unordered_map<int, std::unordered_map<int, int>>* generated = generate_random_graph(size, seed);
     // init values
     std::unordered_map<int, std::unordered_map<int, bool>> e_edges;
@@ -20,7 +22,7 @@ bool compare_algorithms(int size, bool always_show=false){
     int e_cost = 0; bool e_succ;
     int b_cost = 0; bool b_succ;
 
-    std::cout << "Size: " << size;
+    std::cout << "Size: " << generated->size() << " Seed: " << seed;
 
     // run algorithms
     e_succ = Eppstein::ShortestHamiltonianCycle(generated, &e_edges, &e_cost);
@@ -36,6 +38,8 @@ bool compare_algorithms(int size, bool always_show=false){
     else{
         std::cout << " Error!" << std::endl;
         success = false;
+        write_seed_to_file(seed, size);
+        std::cout << "Wrote seed to file!" << std::endl;
         if(!e_succ){
             std::cout << "Eppstein failed" << std::endl;
         }
@@ -48,7 +52,7 @@ bool compare_algorithms(int size, bool always_show=false){
     }
 
     // additional information will be shown if unsuccessful or propted to always show
-    if(success || always_show){
+    if(!success || always_show){
         std::cout << "Details: \n Graph:" << std::endl;
         print_graph(generated);
         std::cout << "Eppstein:" << std::endl;
@@ -66,7 +70,19 @@ bool compare_algorithms(int size, bool always_show=false){
 
 int main(){
 
-    compare_algorithms(10, true);
+    // init rng
+    std::srand(std::time({}));
+
+    for(int i = 20; i < 21; i++){
+        bool stop = false;
+        for(int j = 0; j < 100; j++){
+            if(!compare_algorithms(i)){
+                stop = true;
+                break;
+            }
+        }
+        if(stop) break;
+    }
 
     return 0;
 }
