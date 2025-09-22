@@ -1,3 +1,3 @@
 #!/bin/sh
-dot -Tsvg ./vis/eppstein.gv > eppstein.svg
-dot -Tsvg ./vis/bruteforce.gv > bruteforce.svg
+dot -Tsvg eppstein.gv > eppstein.svg
+dot -Tsvg bruteforce.gv > bruteforce.svg

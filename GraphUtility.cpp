@@ -61,7 +61,7 @@ void to_dot(std::unordered_map<int, std::unordered_map<int, int>>* W, std::unord
     std::unordered_map<int, std::unordered_map<int, int>> G;
 
     std::ofstream dot_file;
-    dot_file.open("vis/" + file_name + ".gv");
+    dot_file.open(file_name + ".gv");
     dot_file << "graph g {\n";
     for(const auto& [v, e] : *W){
         for(const auto& [w, c] : e){
