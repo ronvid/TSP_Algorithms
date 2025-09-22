@@ -11,6 +11,7 @@
 #include "GraphUtility.hpp"
 
 #include <iostream> //TODO debug only ig
+#include <stdexcept> // TODO remove ?
 
 namespace Eppstein{
 
@@ -68,7 +69,7 @@ int get_unforced_neighbour(int v);
 
 
 std::function<bool()> main_ch = []{
-    //std::cout << "action: main " << G.size() << std::endl;
+    //std::cout << "main" << std::endl;
     // main event dispatcher
     // returns true if a hamiltonian cycle was found, otherwise false
 
@@ -78,20 +79,26 @@ std::function<bool()> main_ch = []{
 
     // Now every vertex is degree three and forced edges form a matching
     // pick edge for rcursive search (optimaly one that is adjacent to a forced edge)
-    int v;
-    if(forced_vertices.size() > 0){
-        // takes first vertex from forced vertices
-        v = (*forced_vertices.begin()).first;
-    }
-    else{
-        // takes first vertex from graph
-        v = (*G.begin()).first;
-    }
+    int v = -1;
+    // TODO this is not really efficient and should theoretically not be neccassary (needed, because otherwise a forced vertex with two forced edges is picked for some reason)
+        for(const auto& [i, e] : forced_vertices){
+            if(forced_in_current[i].size() == 1){
+                v = i;
+                break;
+            }
+        }
+        // if no forced vertex has only one forced edge, search for an unforced vertex
+        for(const auto& [i, e] : G){
+            if(!forced_vertices.contains(v)){
+                v = i;
+                break;
+            }
+        }
 
     int w = get_unforced_neighbour(v);
 
     std::function<bool()> continuation = [v,w]{
-        //std::cout << "action: continuation" << std::endl;
+        //std::cout << "continuation " << v << " " << w << std::endl;
         // After searching first recursive subgraph
         if(force(v,w)){
             actions.push_back(main_ch);
@@ -159,7 +166,7 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
         actions.pop_back();
         if(a()){
             // hamiltonian cycle found
-            //std::cout << "found cycle :D" << std::endl;
+            //std::cout << "found cycle: " << current_weight << std::endl;
             cycle_found = true;
             //std::cout << "Cost: " << current_weight << std::endl;
             // check if the found cycle has smaller cost than the best previous cycle
@@ -179,6 +186,7 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
 }
 
 void remove(int v, int w){
+    //std::cout << "remove " << v << " " << w << std::endl;
     // removes edge v-w from G
     bool was_original = G[v][w];
     G[v].erase(w);
@@ -195,7 +203,7 @@ void remove(int v, int w){
     W[w].erase(v);
 
     std::function<bool()> unremove = [v, w, was_original, was_forced, weight]{
-        //std::cout << "action: unremove" << std::endl;
+        //std::cout << "unremove " << v << " " << w << " " << was_original << was_forced << " " << weight << std::endl;
         G[v][w] = G[w][v] = was_original;
         if(was_forced){
             forced_in_current[v][w] = forced_in_current[w][v] = true;
@@ -209,11 +217,12 @@ void remove(int v, int w){
 }
 
 void now_degree_two(int v){
+    //std::cout << "now_degree_two " << v << std::endl;
     // changing G caused v's degree to become two
     degree_two.push_back(v);
 
     std::function<bool()> not_degree_two = [v]{
-        //std::cout << "action: not_degree_two" << std::endl;
+        //std::cout << "not_degree_two " << v << std::endl;
         degree_two.pop_back();
         return false;
     };
@@ -221,6 +230,7 @@ void now_degree_two(int v){
 }
 
 bool safely_remove(int v, int w){
+    //std::cout << "safely_remove " << v << " " << w << std::endl;
     // remove edge v-w and update degree data list
     // return true if successful, otherwise false
     if(forced_in_current[v].contains(w) || G[v].size() < 3 || G[w].size() < 3){
@@ -233,6 +243,7 @@ bool safely_remove(int v, int w){
 }
 
 bool remove_third_leg(int v){
+    //std::cout << "remove_third_leg " << v << std::endl;
     // if v has two forced edges -> remove third unforced edge
     // returns true if successful, otherwise false
     if(G[v].size() != 3 || forced_in_current[v].size() != 2){
@@ -246,6 +257,7 @@ bool remove_third_leg(int v){
 }
 
 bool force(int v, int w){
+    //std::cout << "force " << v << " " << w << std::endl;
     // add edge v-w to forced edges
     // return true if successful, otherwise false
     if(forced_in_current[v].contains(w)){
@@ -271,7 +283,7 @@ bool force(int v, int w){
     current_weight += weight;
 
     std::function<bool()> unforce = [v, w, was_original, v_not_previously_forced, w_not_previously_forced, weight]{
-        //std::cout << "action: unforce" << std::endl;
+        //std::cout << "unforce " << v << " " << w << " " << was_original << v_not_previously_forced << w_not_previously_forced << " " << weight << std::endl;
         if(v_not_previously_forced) forced_vertices.erase(v);
         if(w_not_previously_forced) forced_vertices.erase(w);
 
@@ -293,6 +305,7 @@ bool force(int v, int w){
 }
 
 bool force_into_triangle(int v, int w){
+    //std::cout << "force_into_triangle " << v << " " << w << std::endl;
     // after v-w was forced, check if w belongs to a triangle -> force opposite edge
     if(G[w].size() != 3){
         return true;
@@ -312,6 +325,7 @@ bool force_into_triangle(int v, int w){
 }
 
 bool contract(int v){
+    //std::cout << "contract " << v << std::endl;
     // remove degree two vertex v
     // returns true if cycle should be reported, otherwise false
     // appends recursive search of contracted graph to action stack
@@ -353,7 +367,7 @@ bool contract(int v){
     W.erase(v);
 
     std::function<bool()> uncontract = [v, u, w]{
-        //std::cout << "action: uncontract" << std::endl;
+        //std::cout << "uncontract " << v << " " << u << " " << w << std::endl;
         G[u].erase(w);
         G[w].erase(u);
         forced_in_current[u].erase(w);
@@ -375,6 +389,7 @@ bool contract(int v){
 }
 
 bool handle_degree_two(){
+    //std::cout << "handle_degree_two" << std::endl;
     // handles case that degree two vertices exist
     // return true if cycle was found, otherwise false
 
@@ -400,6 +415,8 @@ int get_unforced_neighbour(int v){ // TODO check if this functions is even necca
         }
     }
     // TODO maybe assertion here
+    print_graph(&forced_in_current);
+    throw std::invalid_argument( " unforced neighbour returned -1"); // TODO remove or something
     return -1;
 }
 
