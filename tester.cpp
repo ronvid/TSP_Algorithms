@@ -78,9 +78,22 @@ int main(){
     // init rng
     std::srand(std::time({}));
 
-    for(int i = 20; i < 21; i++){
+    // get inputs
+    int min_size = 3;
+    std::cout << "Enter min size of tested graphs (greater than 2) [" << min_size << "]" << std::endl;
+    std::cin >> min_size;
+
+    int max_size = 30;
+    std::cout << "Enter max size of tested graphs [" << max_size << "]" << std::endl;
+    std::cin >> max_size;
+
+    int repetitions = 3;
+    std::cout << "Enter number of graphs of one size to be tested[" << repetitions << "]" << std::endl;
+    std::cin >> repetitions;
+
+    for(int i = min_size; i < max_size; i++){
         bool stop = false;
-        for(int j = 0; j < 100; j++){
+        for(int j = 0; j < repetitions; j++){
             if(!compare_algorithms(i)){
                 stop = true;
                 break;
