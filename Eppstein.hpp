@@ -86,21 +86,6 @@ std::function<bool()> main_ch = []{
     else{
         v = (*G.begin()).first;
     }
-    // TODO this is not really efficient and should theoretically not be neccassary (needed, because otherwise a forced vertex with two forced edges is picked for some reason)
-    // (regarding commented code)
-        // for(const auto& [i, e] : forced_vertices){
-        //     if(forced_in_current[i].size() == 1){
-        //         v = i;
-        //         break;
-        //     }
-        // }
-        // // if no forced vertex has only one forced edge, search for an unforced vertex
-        // for(const auto& [i, e] : G){
-        //     if(!forced_vertices.contains(v)){
-        //         v = i;
-        //         break;
-        //     }
-        // }
 
     int w = get_unforced_neighbour(v);
 
@@ -270,7 +255,6 @@ bool force(int v, int w){
     if(forced_in_current[v].contains(w)){
         return true; // already forced
     }
-    // TODO TODO This is different form Eppstein's implementation, where it is just > 2 but that makes no sense
     if(forced_in_current[v].size() > 2 || forced_in_current[w].size() > 2){
         return false; // three incident forced edges
     }
