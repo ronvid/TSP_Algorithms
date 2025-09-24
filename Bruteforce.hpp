@@ -27,8 +27,8 @@ std::set<int> added_vertices;
 // the stack of added vertices (for backtracing)
 std::vector<int> vertex_stack;
 
-// amount of vertices in original graph
-int n;
+// amount of vertices in original graph (not int to calm down the compiler)
+long unsigned int n; //
 
 // total cost of the current solution graph
 int current_cost = 0;
