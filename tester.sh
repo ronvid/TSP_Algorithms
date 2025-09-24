@@ -1,3 +1,3 @@
 #!/bin/sh
 clear
-g++ GraphUtility.cpp tester.cpp -o main -std=c++20
+g++ GraphUtility.cpp tester.cpp -Wall -o main -std=c++20
