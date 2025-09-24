@@ -37,7 +37,7 @@ bool compare_algorithms(int size, bool epp, bool brute, bool always_show=false){
     }
 
     // TODO x_succ could be removed: algorithms can fail if graph has no cycle
-    if(e_succ && b_succ && e_cost == b_cost || !epp || !brute){
+    if((e_succ && b_succ && e_cost == b_cost) || !epp || !brute){
         std::cout << " Success!" << std::endl;
     }
     else{
