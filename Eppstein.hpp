@@ -424,6 +424,8 @@ int get_unforced_neighbour(int v){ // TODO check if this functions is even necca
     }
     // TODO maybe assertion here
     print_graph(&forced_in_current);
+    std::cout << " ----- " << std::endl;
+    print_graph(&G);
     throw std::invalid_argument( " unforced neighbour returned -1"); // TODO remove or something
     return -1;
 }
