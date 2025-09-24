@@ -31,7 +31,7 @@ std::unordered_map<int, std::unordered_map<int, int>>* generate_random_graph(int
 
     // insert vertices to the graph
     for(int i = 0; i < n; i++){
-        W[i];
+        (*W)[i];
     }
 
     // create a boring cycle and assign random cost
