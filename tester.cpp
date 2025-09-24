@@ -7,7 +7,7 @@
 
 // will compare eppstein and bruteforce on a graph of the given size; if always_show is true, additional information will always be shown
 // returns false if the returned costs are not the same and will print additional information
-bool compare_algorithms(int size, bool always_show=false){
+bool compare_algorithms(int size, bool epp, bool brute, bool always_show=false){
     // success flag
     bool success = true;
 
@@ -24,15 +24,20 @@ bool compare_algorithms(int size, bool always_show=false){
 
     std::cout << "Size: " << generated->size() << " Seed: " << seed;
 
-    // run algorithms
-    e_succ = Eppstein::ShortestHamiltonianCycle(generated, &e_edges, &e_cost);
-    std::cout << " Eppstein: " << e_cost;
+    // eppstein
+    if(epp){
+        e_succ = Eppstein::ShortestHamiltonianCycle(generated, &e_edges, &e_cost);
+        std::cout << " Eppstein: " << e_cost;
+    }
 
-    b_succ = Bruteforce::BruteforceHamiltonianCycle(generated, &b_edges, &b_cost);
-    std::cout << " Bruteforce: " << b_cost;
+    // bruteforce
+    if(brute){
+        b_succ = Bruteforce::BruteforceHamiltonianCycle(generated, &b_edges, &b_cost);
+        std::cout << " Bruteforce: " << b_cost;
+    }
 
     // TODO x_succ could be removed: algorithms can fail if graph has no cycle
-    if(e_succ && b_succ && e_cost == b_cost){
+    if(e_succ && b_succ && e_cost == b_cost || !epp || !brute){
         std::cout << " Success!" << std::endl;
     }
     else{
@@ -91,10 +96,21 @@ int main(){
     std::cout << "Enter number of graphs of one size to be tested[" << repetitions << "]" << std::endl;
     std::cin >> repetitions;
 
+    char in;
+    bool run_eppstein = true;
+    std::cout << "Test Eppstein? (y/n)" << std::endl;
+    std::cin >> in;
+    if(in == 'n'){ run_eppstein = false; }
+
+    bool run_bruteforce = true;
+    std::cout << "Test Bruteforce? (y/n)" << std::endl;
+    std::cin >> in;
+    if(in == 'n'){ run_bruteforce = false; }
+
     for(int i = min_size; i < max_size; i++){
         bool stop = false;
         for(int j = 0; j < repetitions; j++){
-            if(!compare_algorithms(i)){
+            if(!compare_algorithms(i, run_eppstein, run_bruteforce)){
                 stop = true;
                 break;
             }
