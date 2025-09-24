@@ -271,7 +271,7 @@ bool force(int v, int w){
         return true; // already forced
     }
     // TODO TODO This is different form Eppstein's implementation, where it is just > 2 but that makes no sense
-    if(forced_in_current[v].size() >= 2 || forced_in_current[w].size() >= 2){
+    if(forced_in_current[v].size() > 2 || forced_in_current[w].size() > 2){
         return false; // three incident forced edges
     }
     forced_in_current[v][w] = forced_in_current[w][v] = true;
@@ -308,8 +308,8 @@ bool force(int v, int w){
     };
     actions.push_back(unforce);
 
-    return remove_third_leg(v) | remove_third_leg(w) |
-        force_into_triangle(v,w) | force_into_triangle(v,w);
+    return remove_third_leg(v) && remove_third_leg(w) &&
+        force_into_triangle(v,w) && force_into_triangle(v,w);
 }
 
 bool force_into_triangle(int v, int w){
