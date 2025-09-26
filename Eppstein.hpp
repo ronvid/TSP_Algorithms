@@ -10,21 +10,18 @@
 
 #include "GraphUtility.hpp"
 
-#include <iostream> //TODO debug only ig
-#include <stdexcept> // TODO remove ?
+#include <stdexcept>
 
 namespace Eppstein{
 
 /**
  * This is a C++ version of David Eppsteins Implementation of Eppsteins Algorithm for finding
  * hamiltonian cycles and a solution to the Traveling Salesman Problem in Cubic Graph
- * TODO name changes
  *
- * NOTE changes
- * Vertices should have values 0+
+ * Restrictions
+ * Vertices should have values >= 0
  */
 
-// NOTE TODO write that somewhere: actions that return none/nothing in EI, return false here
 
 void remove(int v, int w);
 void now_degree_two(int v);
@@ -69,7 +66,6 @@ int get_unforced_neighbour(int v);
 
 
 std::function<bool()> main_ch = []{
-    //std::cout << "main" << std::endl;
     // main event dispatcher
     // returns true if a hamiltonian cycle was found, otherwise false
 
@@ -90,12 +86,11 @@ std::function<bool()> main_ch = []{
     int w = get_unforced_neighbour(v);
 
     std::function<bool()> continuation = [v,w]{
-        //std::cout << "continuation " << v << " " << w << std::endl;
         // After searching first recursive subgraph
         if(force(v,w)){
             actions.push_back(main_ch);
         }
-        return false; // NOTE this should do nothing
+        return false;
     };
 
     actions.push_back(continuation);
@@ -158,17 +153,13 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
         actions.pop_back();
         if(a()){
             // hamiltonian cycle found
-            //std::cout << "found cycle: " << current_weight << std::endl;
             cycle_found = true;
-            //std::cout << "Cost: " << current_weight << std::endl;
+
             // check if the found cycle has smaller cost than the best previous cycle
             if(current_weight < min_found_weight){
                 min_found_weight = current_weight;
-                //std::cout << "delete!" << std::endl;
                 delete_graph(forced_edges);
-                //std::cout << "copy!" << std::endl;
                 copy_graph(&forced_in_input, forced_edges);
-                //std::cout << "done!" << std::endl;
             }
         }
     }
@@ -178,7 +169,6 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
 }
 
 void remove(int v, int w){
-    //std::cout << "remove " << v << " " << w << std::endl;
     // removes edge v-w from G
     bool was_original = G[v][w];
     G[v].erase(w);
@@ -195,7 +185,6 @@ void remove(int v, int w){
     W[w].erase(v);
 
     std::function<bool()> unremove = [v, w, was_original, was_forced, weight]{
-        //std::cout << "unremove " << v << " " << w << " " << was_original << was_forced << " " << weight << std::endl;
         G[v][w] = G[w][v] = was_original;
         if(was_forced){
             forced_in_current[v][w] = forced_in_current[w][v] = true;
@@ -209,12 +198,10 @@ void remove(int v, int w){
 }
 
 void now_degree_two(int v){
-    //std::cout << "now_degree_two " << v << std::endl;
     // changing G caused v's degree to become two
     degree_two.push_back(v);
 
     std::function<bool()> not_degree_two = [v]{
-        //std::cout << "not_degree_two " << v << std::endl;
         degree_two.pop_back();
         return false;
     };
@@ -222,7 +209,6 @@ void now_degree_two(int v){
 }
 
 bool safely_remove(int v, int w){
-    //std::cout << "safely_remove " << v << " " << w << std::endl;
     // remove edge v-w and update degree data list
     // return true if successful, otherwise false
     if(forced_in_current[v].contains(w) || G[v].size() < 3 || G[w].size() < 3){
@@ -235,7 +221,6 @@ bool safely_remove(int v, int w){
 }
 
 bool remove_third_leg(int v){
-    //std::cout << "remove_third_leg " << v << std::endl;
     // if v has two forced edges -> remove third unforced edge
     // returns true if successful, otherwise false
     if(G[v].size() != 3 || forced_in_current[v].size() != 2){
@@ -249,7 +234,6 @@ bool remove_third_leg(int v){
 }
 
 bool force(int v, int w){
-    //std::cout << "force " << v << " " << w << std::endl;
     // add edge v-w to forced edges
     // return true if successful, otherwise false
     if(forced_in_current[v].contains(w)){
@@ -275,7 +259,6 @@ bool force(int v, int w){
     current_weight += weight;
 
     std::function<bool()> unforce = [v, w, was_original, v_not_previously_forced, w_not_previously_forced, weight]{
-        //std::cout << "unforce " << v << " " << w << " " << was_original << v_not_previously_forced << w_not_previously_forced << " " << weight << std::endl;
         if(v_not_previously_forced) forced_vertices.erase(v);
         if(w_not_previously_forced) forced_vertices.erase(w);
 
@@ -297,7 +280,6 @@ bool force(int v, int w){
 }
 
 bool force_into_triangle(int v, int w){
-    //std::cout << "force_into_triangle " << v << " " << w << std::endl;
     // after v-w was forced, check if w belongs to a triangle -> force opposite edge
     if(G[w].size() != 3){
         return true;
@@ -317,7 +299,6 @@ bool force_into_triangle(int v, int w){
 }
 
 bool contract(int v){
-    //std::cout << "contract " << v << std::endl;
     // remove degree two vertex v
     // returns true if cycle should be reported, otherwise false
     // appends recursive search of contracted graph to action stack
@@ -334,7 +315,6 @@ bool contract(int v){
     if(G[u].contains(w)){
         // check if G is a triangle
         if(G.size() == 3){
-            //std::cout << " --> Tripple!" << std::endl;
             return force(u,v) && force(v,w) && force(u,w);
         }
         if (!safely_remove(u,w)){
@@ -359,7 +339,6 @@ bool contract(int v){
     W.erase(v);
 
     std::function<bool()> uncontract = [v, u, w]{
-        //std::cout << "uncontract " << v << " " << u << " " << w << std::endl;
         G[u].erase(w);
         G[w].erase(u);
         forced_in_current[u].erase(w);
@@ -381,7 +360,6 @@ bool contract(int v){
 }
 
 bool handle_degree_two(){
-    //std::cout << "handle_degree_two" << std::endl;
     // handles case that degree two vertices exist
     // return true if cycle was found, otherwise false
 
@@ -389,7 +367,6 @@ bool handle_degree_two(){
     degree_two.pop_back();
 
     std::function<bool()> unpop = [v]{
-        //std::cout << "action: unpop" << std::endl;
         degree_two.push_back(v);
         return false;
     };
@@ -398,9 +375,9 @@ bool handle_degree_two(){
     return contract(v);
 }
 
-int get_unforced_neighbour(int v){ // TODO check if this functions is even neccassary
+int get_unforced_neighbour(int v){
     // returns an unforced neighbour to v
-    // NOTE not originaly a function in Eppsteins implementation
+    // not originaly a function in Eppsteins implementation
     for(std::unordered_map<int, bool>::iterator i = G[v].begin(); i != G[v].end(); i++){
         if(!forced_in_current[v].contains((*i).first)){
             return (*i).first;
