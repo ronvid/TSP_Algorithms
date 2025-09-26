@@ -293,7 +293,7 @@ bool force(int v, int w){
     actions.push_back(unforce);
 
     return remove_third_leg(v) && remove_third_leg(w) &&
-        force_into_triangle(v,w) && force_into_triangle(v,w);
+        force_into_triangle(v,w) && force_into_triangle(w,v);
 }
 
 bool force_into_triangle(int v, int w){
