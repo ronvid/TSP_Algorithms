@@ -7,6 +7,7 @@
 #include <functional>
 #include <climits>
 #include <unordered_map>
+#include <set>
 #include <unordered_set>
 
 #include "GraphUtility.hpp"
@@ -71,7 +72,7 @@ std::vector<std::function<bool()>> actions;
 int get_unforced_neighbour(int v);
 
 // set of six cycles (represented as sets)
-std::unordered_set<std::unordered_set<int>*> six_cycles;
+std::set<std::set<int>> six_cycles; // TODO mabe six cycle as unordered set
 
 
 std::function<bool()> main_ch = []{
@@ -360,11 +361,6 @@ bool contract(int v){
     W[u][w] = W[w][u] = new_weight;
     W.erase(v);
 
-    // check if two neighbouring edges of a six cycle were contracted together, thus removing the six cycle
-    if(G[u].contains(w)){
-        remove_six_cycle_vertices(u, w);
-    }
-
     std::function<bool()> uncontract = [v, u, w]{
         G[u].erase(w);
         G[w].erase(u);
@@ -419,6 +415,7 @@ int get_unforced_neighbour(int v){
 }
 
 bool check_for_six_cycle(int v){
+    //std::cout << "check sc: " << v << std::endl;
     // check if v is part of a six cycle
 
     // v needs to have one forced edge and two unorced edges
@@ -446,13 +443,16 @@ bool check_for_six_cycle(int v){
                 if(u != y && G[z].contains(u) && !forced_in_current[z].contains(u)){
                     //std::cout << "SC found: " << v << " " << w << " " << x << " " << y << " " << z << " " << u << std::endl;
                     // try to insert six cycle to list
-                    std::unordered_set<int>* sc = new std::unordered_set<int>{v,w,u,x,y,z};
-                    if(sc->size() != 6) continue; // should not be nessaccary (since checks in conditionals) (maybe check whats better TODO)
+                    std::set<int> sc = {v,w,u,x,y,z};
+                    if(sc.size() != 6) continue; // should not be nessaccary (since checks in conditionals) (maybe check whats better TODO)
                     if(six_cycles.insert(sc).second){
                         // if six cycle can be inserted
+                        //std::cout << "SC inserted: " << v << " " << w << " " << x << " " << y << " " << z << " " << u << std::endl;
                         std::function<bool()> uninsert_six_cycle = [sc]{
+                            //std::cout << "uninsert " << six_cycles.size() << ": "<< std::endl;
+                            //for(int i : sc) std::cout << i << " ";
+                            //std::cout << std::endl;
                             six_cycles.erase(sc);
-                            delete sc;
                             return false;
                         };
                         actions.push_back(uninsert_six_cycle);
@@ -465,15 +465,24 @@ bool check_for_six_cycle(int v){
 }
 
 void remove_six_cycle_vertices(int v, int w){
+    //std::cout << "remove sc: " << v << " " << w << std::endl;
     // check if both given vertices are part of a six cycle, remove six_cycle if they are
 
     // worst case: runs size * (deleted elements +1) times, maybe find a better way TODO
-    for(std::unordered_set<std::unordered_set<int>*>::iterator sc = six_cycles.begin(); sc != six_cycles.end(); sc++){
-        if(*(sc).contains(v) && *(sc).contains(w)){
-            six_cycles.erase(*sc);
+    for(std::set<std::set<int>>::iterator sc = six_cycles.begin(); sc != six_cycles.end();){
+        //std::cout << "it " << six_cycles.size() << std::endl;
+        if((*(sc)).contains(v) && (*(sc)).contains(w)){
+            //std::cout << "remove!" << std::endl;
+            six_cycles.erase(sc);
 
-            std::function<bool()> unremove_six_cycle = [sc]{
-                six_cycles.insert(*sc);
+            //std::cout << "removed!" << std::endl;
+
+            std::set<int> p = *sc; // give object instead of iterator to the lambda function
+            std::function<bool()> unremove_six_cycle = [p]{
+                //std::cout << "unremove " << six_cycles.size() << ": " << std::endl;
+                //For(int i : (p)) std::cout << i << " ";
+                six_cycles.insert(p);
+                //std::cout << std::endl;
                 return false;
             };
             actions.push_back(unremove_six_cycle);
@@ -482,21 +491,31 @@ void remove_six_cycle_vertices(int v, int w){
             if(six_cycles.size() == 0) break;
         }
         else{
+            //std::cout << "inc" << std::endl;
             sc++;
         }
     }
+    //std::cout << "done!" << std::endl;
 }
 
 void remove_six_cycle_vertices(int v){
+    //std::cout << "remove sc: " << v << std::endl;
     // check if the given vertex is part of a six cycle, remove six_cycle if it is
 
-    // worst case: runs size * (deleted elements +1) times, maybe find a better way TODO
-    for(std::unordered_set<std::unordered_set<int>*>::iterator sc = six_cycles.begin(); sc != six_cycles.end(); sc++){
-        if(*(sc).contains(v)){
-            six_cycles.erase(*sc);
+    // worst case: runs size * (deleted elements +1) times, maybe find a better way TODO https://en.cppreference.com/w/cpp/container/set/erase.html
+    for(std::set<std::set<int>>::iterator sc = six_cycles.begin(); sc != six_cycles.end();){
+        //std::cout << "it " << six_cycles.size() << std::endl;
+        if((*(sc)).contains(v)){
+            //std::cout << "remove!" << std::endl;
+            six_cycles.erase(sc);
 
-            std::function<bool()> unremove_six_cycle = [sc]{
-                six_cycles.insert(*sc);
+            //std::cout << "removed!" << std::endl;
+            std::set<int> p = *sc; // give object instead of iterator to the lambda function
+            std::function<bool()> unremove_six_cycle = [p]{
+                //std::cout << "unremove " << six_cycles.size() << ": " << std::endl;
+                //for(int i : (p)) std::cout << i << " ";
+                six_cycles.insert(p);
+                //std::cout << std::endl;
                 return false;
             };
             actions.push_back(unremove_six_cycle);
@@ -505,9 +524,11 @@ void remove_six_cycle_vertices(int v){
             if(six_cycles.size() == 0) break;
         }
         else{
+            //std::cout << "inc" << std::endl;
             sc++;
         }
     }
+    //std::cout << "done!" << std::endl;
 }
 
 }
