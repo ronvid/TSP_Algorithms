@@ -86,14 +86,61 @@ std::function<bool()> main_ch = []{
     // Now every vertex is degree three and forced edges form a matching
     // pick edge for rcursive search (optimaly one that is adjacent to a forced edge)
     int v = -1;
+    int w = -1;
     if(forced_vertices.size() > 0){
-        v = (*forced_vertices.begin()).first;
+        //std::cout << "forced: " << forced_vertices.size() << " sc: " << six_cycles.size() << std::endl;
+        // pick edge from a six cycle
+        if(six_cycles.size() > 0){
+            //std::cout << "sc: " << six_cycles.size() << std::endl;
+            std::set<int> most; // six cycle with most forced neighbours
+            int highest_count = 0;
+            for(std::set sc : six_cycles){
+                int count = 0;
+                for(int i : sc){
+                    if(forced_vertices.contains(i)) count++;
+                }
+                if(count > highest_count){
+                    most = sc;
+                    highest_count = count;
+                }
+            }
+            //std::cout << "most " << most.size() << ": ";
+            //for(int i : most) std::cout << i << " ";
+            //std::cout << std::endl;
+            // try to find an edge in the sc that is next to two edges
+            for(int i : most){
+                if(forced_vertices.contains(i)){
+                    v = i;
+                    //std::cout << "v: " << v << std::endl;
+                    for(const auto& [j,c] : G[v]){
+                        // check if the neighbour of v is in the six cycle, is forced, but there is no forced edge between the vertices
+                        if(most.contains(j) && forced_vertices.contains(j) && !forced_in_current[v].contains(j)){
+                            w = j;
+                            //std::cout << "found w: " << w << std::endl;
+                            goto edge_found;
+                        }
+                    }
+                }
+            }
+            // no neighbouring forced vertex was found, just pick any neighbour
+            //std::cout << "search w" << std::endl;
+            w = get_unforced_neighbour(v);
+            //std::cout << "sub w: " << w << std::endl;
+        }
+        // pick an unforced edge, next to a forced edge
+        else{
+            v = (*forced_vertices.begin()).first;
+            w = get_unforced_neighbour(v);
+            //std::cout << "basic forced: " << v << " " << w << std::endl;
+        }
     }
+    // pick any edge
     else{
+        //std::cout << "no forced!" << std::endl;
         v = (*G.begin()).first;
+        w = get_unforced_neighbour(v);
     }
-
-    int w = get_unforced_neighbour(v);
+edge_found:
 
     std::function<bool()> continuation = [v,w]{
         // After searching first recursive subgraph
@@ -176,7 +223,13 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
     }
 
     *cost = min_found_weight;
-    std::cout << "Final sc count: " << six_cycles.size() << std::endl;
+    if(six_cycles.size() != 0){
+        // debug assertion TODO remove!
+        print_graph(&forced_in_current);
+        std::cout << " ----- " << std::endl;
+        print_graph(&G);
+        throw std::invalid_argument("Search returned with more than 0 sc's -> cleanup error"); // TODO remove or something
+    }
     return cycle_found;
 }
 
@@ -471,21 +524,21 @@ void remove_six_cycle_vertices(int v, int w){
     // worst case: runs size * (deleted elements +1) times, maybe find a better way TODO
     for(std::set<std::set<int>>::iterator sc = six_cycles.begin(); sc != six_cycles.end();){
         //std::cout << "it " << six_cycles.size() << std::endl;
-        if((*(sc)).contains(v) && (*(sc)).contains(w)){
+        if((*sc).contains(v) && (*(sc)).contains(w)){
             //std::cout << "remove!" << std::endl;
-            six_cycles.erase(sc);
 
-            //std::cout << "removed!" << std::endl;
+            //std::cout << "removed! " << (*sc).size() << std::endl;
 
             std::set<int> p = *sc; // give object instead of iterator to the lambda function
             std::function<bool()> unremove_six_cycle = [p]{
                 //std::cout << "unremove " << six_cycles.size() << ": " << std::endl;
-                //For(int i : (p)) std::cout << i << " ";
-                six_cycles.insert(p);
+                //for(int i : (p)) std::cout << i << " ";
                 //std::cout << std::endl;
+                six_cycles.insert(p);
                 return false;
             };
             actions.push_back(unremove_six_cycle);
+            six_cycles.erase(sc);
 
             sc = six_cycles.begin();
             if(six_cycles.size() == 0) break;
@@ -505,20 +558,21 @@ void remove_six_cycle_vertices(int v){
     // worst case: runs size * (deleted elements +1) times, maybe find a better way TODO https://en.cppreference.com/w/cpp/container/set/erase.html
     for(std::set<std::set<int>>::iterator sc = six_cycles.begin(); sc != six_cycles.end();){
         //std::cout << "it " << six_cycles.size() << std::endl;
-        if((*(sc)).contains(v)){
+        if((*sc).contains(v)){
             //std::cout << "remove!" << std::endl;
-            six_cycles.erase(sc);
 
-            //std::cout << "removed!" << std::endl;
+            //std::cout << "removed! " << (*sc).size() << std::endl;
+
             std::set<int> p = *sc; // give object instead of iterator to the lambda function
             std::function<bool()> unremove_six_cycle = [p]{
                 //std::cout << "unremove " << six_cycles.size() << ": " << std::endl;
                 //for(int i : (p)) std::cout << i << " ";
-                six_cycles.insert(p);
                 //std::cout << std::endl;
+                six_cycles.insert(p);
                 return false;
             };
             actions.push_back(unremove_six_cycle);
+            six_cycles.erase(sc);
 
             sc = six_cycles.begin();
             if(six_cycles.size() == 0) break;
