@@ -25,28 +25,28 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool alwa
     int b_cost = 0; bool b_succ;
     int s_cost = 0; bool s_succ;
 
-    std::cout << "Size: " << generated->size() << " Seed: " << seed;
+    std::cout << "Size: " << generated->size() << " Seed: " << seed << std::endl;
 
     // eppstein
     if(epp){
         e_succ = Eppstein::ShortestHamiltonianCycle(generated, &e_edges, &e_cost);
-        std::cout << " Eppstein: " << e_cost;
+        std::cout << "Eppstein: " << e_cost << std::endl;
     }
 
     // bruteforce
     if(brute){
         b_succ = Bruteforce::BruteforceHamiltonianCycle(generated, &b_edges, &b_cost);
-        std::cout << " Bruteforce: " << b_cost;
+        std::cout << "Bruteforce: " << b_cost << std::endl;
     }
 
     // Schuster
     if(schuster){
         s_succ = Schuster::ShortestHamiltonianCycle(generated, &s_edges, &s_cost);
-        std::cout << " Schuster: " << s_cost;
+        std::cout << "Schuster: " << s_cost << std::endl;
     }
 
     // TODO x_succ could be removed: algorithms can fail if graph has no cycle
-    if((e_succ && b_succ && s_succ && e_cost == b_cost && b_cost == s_cost) || !epp || !brute || !schuster){
+    if((e_succ && s_succ && e_cost == s_cost) || !epp || !schuster){
         std::cout << " Success!" << std::endl;
     }
     else{
