@@ -5,6 +5,7 @@
 #include "Generator.cpp"
 
 #include <ctime>
+#include <chrono>
 
 // will compare eppstein and bruteforce on a graph of the given size; if always_show is true, additional information will always be shown
 // returns false if the returned costs are not the same and will print additional information
@@ -29,8 +30,11 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool alwa
 
     // eppstein
     if(epp){
+        const auto start{std::chrono::steady_clock::now()};
         e_succ = Eppstein::ShortestHamiltonianCycle(generated, &e_edges, &e_cost);
-        std::cout << "Eppstein: " << e_cost << std::endl;
+        const auto finish{std::chrono::steady_clock::now()};
+        const std::chrono::duration<double> elapsed_seconds{finish - start};
+        std::cout << "Eppstein: " << e_cost << " in " << elapsed_seconds << "." << std::endl;
     }
 
     // bruteforce
@@ -41,8 +45,11 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool alwa
 
     // Schuster
     if(schuster){
+        const auto start{std::chrono::steady_clock::now()};
         s_succ = Schuster::ShortestHamiltonianCycle(generated, &s_edges, &s_cost);
-        std::cout << "Schuster: " << s_cost << std::endl;
+        const auto finish{std::chrono::steady_clock::now()};
+        const std::chrono::duration<double> elapsed_seconds{finish - start};
+        std::cout << "Schuster: " << s_cost << " in " << elapsed_seconds << "." << std::endl;
     }
 
     // TODO x_succ could be removed: algorithms can fail if graph has no cycle
