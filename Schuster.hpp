@@ -37,7 +37,8 @@ bool handle_degree_two();
 
 bool check_for_six_cycle(int v);
 void remove_six_cycle_vertices(int v, int w);
-    void remove_six_cycle_vertices(int v);
+void remove_six_cycle_vertices(int v);
+void check_for_four_cycle(int v);
 
 bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weights, std::unordered_map<int, std::unordered_map<int, bool>>* forced_edges, int* cost);
 
@@ -74,6 +75,8 @@ int get_unforced_neighbour(int v);
 // set of six cycles (represented as sets)
 std::set<std::set<int>> six_cycles; // TODO mabe six cycle as unordered set
 
+// saves four cycles as sets, with thier vertices beeing thier key
+std::unordered_map<int, std::set<int>*> four_cycles;
 
 std::function<bool()> main_ch = []{
     // main event dispatcher
@@ -230,6 +233,7 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
         print_graph(&G);
         throw std::invalid_argument("Search returned with more than 0 sc's -> cleanup error"); // TODO remove or something
     }
+    std::cout << "final fc size: " << four_cycles.size() << std::endl;
     return cycle_found;
 }
 
@@ -302,6 +306,7 @@ bool remove_third_leg(int v){
     return safely_remove(v, w);
 }
 
+// TODO maybe add a bool to check if the alg should even look for fc
 bool force(int v, int w){
     // add edge v-w to forced edges
     // return true if successful, otherwise false
@@ -333,6 +338,10 @@ bool force(int v, int w){
     // check if any of the forced vertices are part of a six cycle
     check_for_six_cycle(v);
     check_for_six_cycle(w);
+
+    // check for four cycles
+    check_for_four_cycle(v);
+    check_for_four_cycle(w);
 
     std::function<bool()> unforce = [v, w, was_original, v_not_previously_forced, w_not_previously_forced, weight]{
         if(v_not_previously_forced) forced_vertices.erase(v);
@@ -583,6 +592,64 @@ void remove_six_cycle_vertices(int v){
         }
     }
     //std::cout << "done!" << std::endl;
+}
+
+// TODO TODO TODO repräsentation der fc als vektor (erlaubt implizit zu sagen welche geforced sind) in einer map
+// eine map für vollständig geforcete fc, eine für teils geforcete (schließen sich aus)
+void check_for_four_cycle(int v){
+    //check if the given vertex is part of a four cycle and add it, if it is
+
+    // check that v is not part of a four cycle
+    if(four_cycles.contains(v)){
+        return;
+    }
+
+    // get unforced neighbours of v
+    int w = -1; int u = -1;
+    for(const auto& [e,c] : G[v]){
+        if(forced_in_current[v].contains(e)) continue;
+        if(w == -1) w = e;
+        else if(u == -1) u = e;
+        else return; // three unforced neighbours
+    }
+    // check that two unforced neighbours were found
+    if(w == -1 || u == -1) return;
+
+    // check if four cycle (w and u share a vertex that has a forced edge outside the four cycle)
+    for(const auto& [e,c] : G[w]){
+        if(e != v && G[u].contains(e) && forced_vertices.contains(e) && !forced_in_current[w].contains(e) && !forced_in_current[u].contains(e)){
+            // create four cycle set and add vertices to list
+            std::set<int>* fc = new std::set<int>{v,w,u,e};
+            four_cycles[v] = fc;
+            four_cycles[w] = fc;
+            four_cycles[u] = fc;
+            four_cycles[e] = fc;
+            std::cout << "fc found: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
+
+            // force other none four cycle edges
+            for(const auto& [i, d] : G[w]){
+                if(i != v && i != e) force(w, i);
+                break;
+            }
+            for(const auto& [i,d] : G[u]){
+                if(i != v && i != e) force(u, i);
+                break;
+            }
+
+            std::function<bool()> unadd_four_cycle = [v,w,u,e,fc]{
+                four_cycles.erase(v);
+                four_cycles.erase(w);
+                four_cycles.erase(u);
+                four_cycles.erase(e);
+                delete fc;
+                std::cout << "unadd: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
+                return false;
+            };
+            actions.push_back(unadd_four_cycle);
+
+            return;
+        }
+    }
 }
 
 }
