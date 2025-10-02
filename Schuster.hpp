@@ -39,6 +39,7 @@ bool check_for_six_cycle(int v);
 void remove_six_cycle_vertices(int v, int w);
 void remove_six_cycle_vertices(int v);
 void check_for_four_cycle(int v);
+void remove_partial_four_cycle(int v);
 
 bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weights, std::unordered_map<int, std::unordered_map<int, bool>>* forced_edges, int* cost);
 
@@ -75,8 +76,11 @@ int get_unforced_neighbour(int v);
 // set of six cycles (represented as sets)
 std::set<std::set<int>> six_cycles; // TODO mabe six cycle as unordered set
 
-// saves four cycles as sets, with thier vertices beeing thier key
-std::unordered_map<int, std::set<int>*> four_cycles;
+// saves four cycles as vectors, where the first and the last element in the vector represent the opposing vertices; the cycles are mapped to their vertices
+std::unordered_map<int, std::vector<int>*> four_cycles;
+
+// saves four cycles, where only two neighbouring vertices are forced, the first two vertices in the vector are forced, the cycles are only mapped to the two forced vertices
+std::unordered_map<int, std::vector<int>*> partial_four_cycles;
 
 std::function<bool()> main_ch = []{
     // main event dispatcher
@@ -256,6 +260,10 @@ void remove(int v, int w){
     // check if any of the vertices were part of a six cycle
     remove_six_cycle_vertices(v);
     remove_six_cycle_vertices(w);
+
+    // remove any partial four cycles
+    remove_partial_four_cycle(v);
+    remove_partial_four_cycle(w);
 
     std::function<bool()> unremove = [v, w, was_original, was_forced, weight]{
         G[v][w] = G[w][v] = was_original;
@@ -615,41 +623,110 @@ void check_for_four_cycle(int v){
     // check that two unforced neighbours were found
     if(w == -1 || u == -1) return;
 
-    // check if four cycle (w and u share a vertex that has a forced edge outside the four cycle)
+    // check that w and u have 3 neighbours
+    if(G[w].size() != 3 || G[u].size() != 3) return;
+
+    // check if four cycle (w and u share a vertex)
     for(const auto& [e,c] : G[w]){
-        if(e != v && G[u].contains(e) && forced_vertices.contains(e) && !forced_in_current[w].contains(e) && !forced_in_current[u].contains(e)){
-            // create four cycle set and add vertices to list
-            std::set<int>* fc = new std::set<int>{v,w,u,e};
-            four_cycles[v] = fc;
-            four_cycles[w] = fc;
-            four_cycles[u] = fc;
-            four_cycles[e] = fc;
-            std::cout << "fc found: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
+        if(e != v && G[u].contains(e)){
+            // check if four cycle has two opposite edges
+            if(forced_vertices.contains(e) && !forced_in_current[w].contains(e) && !forced_in_current[u].contains(e)){
+                // create four cycle set and add vertices to list
+                std::vector<int>* fc = new std::vector<int>{v,w,u,e};
+                four_cycles[v] = fc;
+                four_cycles[w] = fc;
+                four_cycles[u] = fc;
+                four_cycles[e] = fc;
+                std::cout << "fc found: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
 
-            // force other none four cycle edges
-            for(const auto& [i, d] : G[w]){
-                if(i != v && i != e) force(w, i);
-                break;
+                // force other none four cycle edges
+                for(const auto& [i, d] : G[w]){
+                    if(i != v && i != e) force(w, i);
+                    break;
+                }
+                for(const auto& [i,d] : G[u]){
+                    if(i != v && i != e) force(u, i);
+                    break;
+                }
+
+                // check if four cycle was a partial four cycle before
+                if(partial_four_cycles.contains(v)){
+                    remove_partial_four_cycle(v);
+                }
+                if(partial_four_cycles.contains(e)){
+                    remove_partial_four_cycle(e);
+                }
+
+                std::function<bool()> unadd_four_cycle = [v,w,u,e,fc]{
+                    four_cycles.erase(v);
+                    four_cycles.erase(w);
+                    four_cycles.erase(u);
+                    four_cycles.erase(e);
+                    delete fc;
+                    std::cout << "unadd: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
+                    return false;
+                };
+                actions.push_back(unadd_four_cycle);
+
+                return;
             }
-            for(const auto& [i,d] : G[u]){
-                if(i != v && i != e) force(u, i);
-                break;
+            // if opposite edge are not forced, check if neighbouring edges are forced
+            else if(!forced_vertices.contains(e)){
+                // check if w is forced
+                if(forced_vertices.contains(w)){
+                    // add as partial four cycle
+                    std::vector<int>* fc = new std::vector<int>{v,w,u,e};
+                    partial_four_cycles[v] = (fc);
+                    partial_four_cycles[w] = (fc);
+                    std::cout << "partial found " << v << " " << w << " " << u << " " << e << " now: " << partial_four_cycles.size() << std::endl;
+                    std::function<bool()> unadd_four_cycle = [v,w,fc]{
+                        partial_four_cycles.erase(v);
+                        partial_four_cycles.erase(w);
+                        std::cout << "unadd partial: " << v << " " << w << " now: " << partial_four_cycles.size() << std::endl;
+                        delete fc;
+                        return false;
+                    };
+                    actions.push_back(unadd_four_cycle);
+                    return;
+                }
+                // check if u is forced
+                else if(forced_vertices.contains(u)){
+                    // add as partial four cycle
+                    std::vector<int>* fc = new std::vector<int>{v,u,w,e};
+                    partial_four_cycles[v] = (fc);
+                    partial_four_cycles[u] = (fc);
+                    std::cout << "partial found " << v << " " << u << " " << w << " " << e << " now: " << partial_four_cycles.size() << std::endl;
+                    std::function<bool()> unadd_four_cycle = [v,u,fc]{
+                        partial_four_cycles.erase(v);
+                        partial_four_cycles.erase(u);
+                        std::cout << "unadd partial: " << v << " " << u << " now: " << partial_four_cycles.size() << std::endl;
+                        delete fc;
+                        return false;
+                    };
+                    actions.push_back(unadd_four_cycle);
+                    return;
+                }
             }
-
-            std::function<bool()> unadd_four_cycle = [v,w,u,e,fc]{
-                four_cycles.erase(v);
-                four_cycles.erase(w);
-                four_cycles.erase(u);
-                four_cycles.erase(e);
-                delete fc;
-                std::cout << "unadd: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
-                return false;
-            };
-            actions.push_back(unadd_four_cycle);
-
-            return;
         }
     }
+}
+
+void remove_partial_four_cycle(int v){
+    // check if v is part of a partial four cycle and remove it
+    if(!partial_four_cycles.contains(v)) return;
+
+    // forced edges in partial four cycle are the first and second element
+    std::vector<int>* fc = partial_four_cycles[v];
+    int x = (*fc)[0];
+    int y = (*fc)[1];
+    partial_four_cycles.erase(x);
+    partial_four_cycles.erase(y);
+    std::function<bool()> unremove = [x,y,fc]{
+        partial_four_cycles[x] = fc;
+        partial_four_cycles[y] = fc;
+        return false;
+    };
+    actions.push_back(unremove);
 }
 
 }
