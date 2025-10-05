@@ -15,6 +15,7 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool alwa
 
     // generate seed for
     int seed = std::rand();
+    write_seed_to_file(seed, size); // write seed to file
 
     // generate graph of given size
     std::unordered_map<int, std::unordered_map<int, int>>* generated = generate_random_graph(size, seed);
@@ -59,8 +60,6 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool alwa
     else{
         std::cout << " Error!" << std::endl;
         success = false;
-        write_seed_to_file(seed, size);
-        std::cout << "Wrote seed to file!" << std::endl;
         if(!e_succ){
             std::cout << "Eppstein failed" << std::endl;
         }
