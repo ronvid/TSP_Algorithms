@@ -85,11 +85,30 @@ std::unordered_map<int, std::vector<int>*> four_cycles;
 std::unordered_set<std::vector<int>*> partial_four_cycles;
 
 std::function<bool()> main_ch = []{
+    //std::cout << "main" << std::endl;
     // main event dispatcher
     // returns true if a hamiltonian cycle was found, otherwise false
 
     if(degree_two.size() > 0){
         return handle_degree_two();
+    }
+
+    // before an edge for the branching is searched, check if the graph only consists of four cycles and solve the instance directly
+    // TODO maybe check if G is larger than 4?
+    if(four_cycles.size() == G.size()){
+        std::cout << "Branch directly! G: " << G.size() << " fcc: " << four_cycles.size() << std::endl;
+        std::cout << "partial count: " << partial_four_cycles.size() << std::endl;
+        for(const auto& [x,fc] : four_cycles){
+            for(int i : *fc){
+                std::cout << i << " ";
+            }
+            std::cout << std::endl;
+        }
+        to_dot(&W, &forced_in_current, "direct");
+        throw std::invalid_argument("Branch directly! woah"); // TODO remove or something
+
+        actions.push_back(main_ch);
+        return false;
     }
 
     // Now every vertex is degree three and forced edges form a matching
@@ -98,6 +117,28 @@ std::function<bool()> main_ch = []{
     int w = -1;
     if(forced_vertices.size() > 0){
         //std::cout << "forced: " << forced_vertices.size() << " sc: " << six_cycles.size() << std::endl;
+        // pick edge from a partial four cycle
+        if(partial_four_cycles.size() > 0){
+            // pick an unforced vertex of the four cycle and its neighbouring vertex outside the four cycle
+            std::vector<int>* fc = *partial_four_cycles.begin();
+            v = (*fc)[2]; // the third and fourth element in the list are the unforced vertices
+            for(int i : *fc){
+                //std::cout << "test: "<< i << std::endl;
+                if(i != (*fc)[0] && i != (*fc)[1] && i != (*fc)[3]){
+                    w = i;
+                    break;
+                }
+            }
+            // TODO remove (debug)
+            if(w == -1){
+                print_graph(&forced_in_current);
+                std::cout << " ----- " << std::endl;
+                print_graph(&G);
+                std::cout << "v: " << v << std::endl;
+                for(int i : *fc){ std::cout << i << " "; } std::cout << std::endl;
+                throw std::invalid_argument("no element for continuation in partial fc found"); // TODO remove or something
+            }
+        }
         // pick edge from a six cycle
         if(six_cycles.size() > 0){
             //std::cout << "sc: " << six_cycles.size() << std::endl;
@@ -670,7 +711,7 @@ bool check_for_four_cycle(int v){
                     four_cycles.erase(u);
                     four_cycles.erase(e);
                     delete fc;
-                    //std::cout << "unadd: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
+                    //std::cout << "deleted: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
                     return false;
                 };
                 actions.push_back(unadd_four_cycle);
@@ -751,7 +792,7 @@ void remove_four_cycle(int v){
             four_cycles[(*fc)[1]] = fc;
             four_cycles[(*fc)[2]] = fc;
             four_cycles[(*fc)[3]] = fc;
-            //std::cout << "unremove fc: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << std::endl;
+            //std::cout << "unremove fc: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << " : " << fc << std::endl;
             return false;
         };
         actions.push_back(unremove);
@@ -771,10 +812,10 @@ void remove_four_cycle(int v, int w){
         four_cycles.erase((*fc)[3]);
 
         std::function<bool()> unremove = [fc]{
-            four_cycles[(*fc)[0]];
-            four_cycles[(*fc)[1]];
-            four_cycles[(*fc)[2]];
-            four_cycles[(*fc)[3]];
+            four_cycles[(*fc)[0]] = fc;
+            four_cycles[(*fc)[1]] = fc;
+            four_cycles[(*fc)[2]] = fc;
+            four_cycles[(*fc)[3]] = fc;
             //std::cout << "unremove: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << std::endl;
             return false;
         };
