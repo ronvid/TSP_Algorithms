@@ -42,6 +42,7 @@ bool check_for_four_cycle(int v);
 void remove_four_cycle(int v);
 void remove_four_cycle(int v, int w);
 void remove_partial_four_cycle(int v);
+bool solve_directly();
 
 bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weights, std::unordered_map<int, std::unordered_map<int, bool>>* forced_edges, int* cost);
 
@@ -84,6 +85,8 @@ std::unordered_map<int, std::vector<int>*> four_cycles;
 // saves four cycles, where only two neighbouring vertices are forced, the first two vertices in the vector are forced
 std::unordered_set<std::vector<int>*> partial_four_cycles;
 
+std::vector<int> direct_count; // TODO is debug, remove
+
 std::function<bool()> main_ch = []{
     //std::cout << "main" << std::endl;
     // main event dispatcher
@@ -96,19 +99,20 @@ std::function<bool()> main_ch = []{
     // before an edge for the branching is searched, check if the graph only consists of four cycles and solve the instance directly
     // TODO maybe check if G is larger than 4?
     if(four_cycles.size() == G.size()){
-        std::cout << "Branch directly! G: " << G.size() << " fcc: " << four_cycles.size() << std::endl;
-        std::cout << "partial count: " << partial_four_cycles.size() << std::endl;
-        for(const auto& [x,fc] : four_cycles){
-            for(int i : *fc){
-                std::cout << i << " ";
-            }
-            std::cout << std::endl;
-        }
-        to_dot(&W, &forced_in_current, "direct");
-        throw std::invalid_argument("Branch directly! woah"); // TODO remove or something
-
-        actions.push_back(main_ch);
-        return false;
+        // std::cout << "Branch directly! G: " << G.size() << " fcc: " << four_cycles.size() << std::endl;
+        // std::cout << "partial count: " << partial_four_cycles.size() << std::endl;
+        // for(const auto& [x,fc] : four_cycles){
+        //     for(int i : *fc){
+        //         std::cout << i << " ";
+        //     }
+        //     std::cout << std::endl;
+        // }
+        // to_dot(&W, &forced_in_current, "direct");
+        // throw std::invalid_argument("Branch directly! woah"); // TODO remove or something
+        //
+        // actions.push_back(main_ch);
+        // return false;
+        direct_count.push_back(G.size());
     }
 
     // Now every vertex is degree three and forced edges form a matching
@@ -284,6 +288,8 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
     }
     std::cout << "final fc size: " << four_cycles.size() << std::endl;
     std::cout << "final partial fc size: " << partial_four_cycles.size() << std::endl;
+    std::cout << "direct count: " << direct_count.size() << std::endl;
+    for(int i : direct_count){ std::cout << i << " "; } std::cout << std::endl;
     return cycle_found;
 }
 
@@ -371,7 +377,7 @@ bool remove_third_leg(int v){
 // TODO maybe add a bool to check if the alg should even look for fc
 // TODO maybe needs a check if the edge even exists
 bool force(int v, int w){
-    //std::cout << "force: " << v << " " << w << std::endl;
+    std::cout << "force: " << v << " " << w << std::endl;
     // add edge v-w to forced edges
     // return true if successful, otherwise false
     if(forced_in_current[v].contains(w)){
@@ -511,6 +517,13 @@ bool contract(int v){
         return false;
     };
     actions.push_back(uncontract);
+
+    // check if contracted edge was/is part of a four/six cycle
+    check_for_four_cycle(w);
+    check_for_four_cycle(u);
+    check_for_six_cycle(w);
+    check_for_six_cycle(u);
+
     actions.push_back(main_ch);
 
     return false;
@@ -703,7 +716,7 @@ bool check_for_four_cycle(int v){
                 four_cycles[w] = fc;
                 four_cycles[u] = fc;
                 four_cycles[e] = fc;
-                //std::cout << "fc found: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
+                std::cout << "fc found: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
 
                 std::function<bool()> unadd_four_cycle = [v,w,u,e,fc]{
                     four_cycles.erase(v);
@@ -711,7 +724,7 @@ bool check_for_four_cycle(int v){
                     four_cycles.erase(u);
                     four_cycles.erase(e);
                     delete fc;
-                    //std::cout << "deleted: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
+                    std::cout << "deleted: " << v << " " << w << " " << u << " " << e << " now: " << four_cycles.size() << std::endl;
                     return false;
                 };
                 actions.push_back(unadd_four_cycle);
@@ -744,10 +757,10 @@ bool check_for_four_cycle(int v){
                     // add as partial four cycle
                     std::vector<int>* fc = new std::vector<int>{v,w,u,e};
                     partial_four_cycles.insert(fc);
-                    //std::cout << "partial found " << v << " " << w << " " << u << " " << e << " now: " << partial_four_cycles.size() << std::endl;
+                    std::cout << "partial found " << v << " " << w << " " << u << " " << e << " now: " << partial_four_cycles.size() << std::endl;
                     std::function<bool()> unadd_four_cycle = [fc]{
                         partial_four_cycles.erase(fc);
-                        //std::cout << "unadd partial: " << (*fc)[0] << " " << (*fc)[1] << " now: " << partial_four_cycles.size() << std::endl;
+                        std::cout << "unadd partial: " << (*fc)[0] << " " << (*fc)[1] << " now: " << partial_four_cycles.size() << std::endl;
                         delete fc;
                         return false;
                     };
@@ -759,10 +772,10 @@ bool check_for_four_cycle(int v){
                     // add as partial four cycle
                     std::vector<int>* fc = new std::vector<int>{v,u,w,e};
                     partial_four_cycles.insert(fc);
-                    //std::cout << "partial found " << v << " " << u << " " << w << " " << e << " now: " << partial_four_cycles.size() << std::endl;
+                    std::cout << "partial found " << v << " " << u << " " << w << " " << e << " now: " << partial_four_cycles.size() << std::endl;
                     std::function<bool()> unadd_four_cycle = [fc]{
                         partial_four_cycles.erase(fc);
-                        //std::cout << "unadd partial: " << (*fc)[0] << " " << (*fc)[1] << " now: " << partial_four_cycles.size() << std::endl;
+                        std::cout << "unadd partial: " << (*fc)[0] << " " << (*fc)[1] << " now: " << partial_four_cycles.size() << std::endl;
                         delete fc;
                         return false;
                     };
@@ -781,7 +794,7 @@ void remove_four_cycle(int v){
 
     if(four_cycles.contains(v)){
         std::vector<int>* fc = four_cycles[v];
-        //std::cout << "remove: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << std::endl;
+        std::cout << "remove: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << std::endl;
         four_cycles.erase((*fc)[0]);
         four_cycles.erase((*fc)[1]);
         four_cycles.erase((*fc)[2]);
@@ -792,7 +805,7 @@ void remove_four_cycle(int v){
             four_cycles[(*fc)[1]] = fc;
             four_cycles[(*fc)[2]] = fc;
             four_cycles[(*fc)[3]] = fc;
-            //std::cout << "unremove fc: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << " : " << fc << std::endl;
+            std::cout << "unremove fc: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << " : " << fc << std::endl;
             return false;
         };
         actions.push_back(unremove);
@@ -805,7 +818,7 @@ void remove_four_cycle(int v, int w){
 
     if(four_cycles.contains(v) && four_cycles.contains(w) && four_cycles[v] == four_cycles[w]){
         std::vector<int>* fc = four_cycles[v];
-        //std::cout << "remove: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << std::endl;
+        std::cout << "remove: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << std::endl;
         four_cycles.erase((*fc)[0]);
         four_cycles.erase((*fc)[1]);
         four_cycles.erase((*fc)[2]);
@@ -816,7 +829,7 @@ void remove_four_cycle(int v, int w){
             four_cycles[(*fc)[1]] = fc;
             four_cycles[(*fc)[2]] = fc;
             four_cycles[(*fc)[3]] = fc;
-            //std::cout << "unremove: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << std::endl;
+            std::cout << "unremove: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << std::endl;
             return false;
         };
         actions.push_back(unremove);
@@ -832,7 +845,9 @@ void remove_partial_four_cycle(int v){
 
             // forced edges in partial four cycle are the first and second element
             partial_four_cycles.erase(fc);
+            std::cout << "remove partial: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << " now: " << partial_four_cycles.size() << std::endl;
             std::function<bool()> unremove = [fc]{
+                std::cout << "unremove partial: " << (*fc)[0] << " " << (*fc)[1] << " " << (*fc)[2] << " " << (*fc)[3] << " now: " << partial_four_cycles.size() << std::endl;
                 partial_four_cycles.insert(fc);
                 return false;
             };
@@ -844,6 +859,107 @@ void remove_partial_four_cycle(int v){
             it++;
         }
     }
+
+}
+
+bool solve_directly(){
+    // when the graph only consists of four cycles, the instance can be solved directly
+
+    std::unordered_map<int, std::unordered_map<int, std::vector<int>>> mst; // the graph used for the minimum spanning tree, saves a vector per edge, where the first 4 values are the H edges  (H1, H1, H2, H2) and the fifth value are the costs of the edge (C - H)
+    std::unordered_map<int, int> vertex_to_mst; // map a vertex to its corresponding mst-vertex
+    std::unordered_set<int> next; // set of vertices that are checked next
+    int id = 0; // the id of the current mst-vertex
+
+    int start = (*(G.begin())).first; // select vertex in G to start
+    int cur = start;
+    vertex_to_mst[start] = id;
+    mst[id];
+    // check edges until starting vertex is reached again
+    while(true){
+        // alternate between forced and H edges
+        int n = (*forced_in_current[cur].begin()).first;
+        vertex_to_mst[n] = id;
+        cur = n;
+
+        // now H edge
+        // get other vertices of four cycle
+        int w = -1; int u = -1; int x = -1;
+        for(const auto& [e,o] : G[cur]){
+            if(w == -1 && !forced_in_current[cur].contains(e)) w = e;
+            else if(!forced_in_current[cur].contains(e)) u = e;
+        }
+        // get edge opposite of cur
+        for(const auto& [e,o] : G[w]){
+            if(e != cur && G[u].contains(e)) x = e;
+        }
+        // TODO debug check, remove later
+        if(w == -1 || u == -1 || x == -1){
+            print_graph(&forced_in_current);
+            std::cout << " ----- " << std::endl;
+            print_graph(&G);
+            throw std::invalid_argument("three fc vertices could not be found"); // TODO remove or something
+        }
+        // check which pair of edges has lower costs
+        if(W[cur][w] + W[u][x] > W[cur][u] + W[w][x]){
+            // swap w and u so that cur-w and u-x are H edges
+            int tmp = u; u = w; w = tmp;
+        }
+        if(vertex_to_mst.contains(x) && vertex_to_mst[x] == id){ // if opposite vertex is part of the same cycle, both H edges can be directly forced
+            if(!force(cur, w) || !force(u, x)){
+                throw std::invalid_argument("H edges could not be forced"); // TODO remove or something
+                return false; // if one of the H edges cannot be forced (which should not be possible, the instance cannot be solved TODO)
+            }
+        }
+        else if(vertex_to_mst.contains(x)){ // if opposite mst-vertex is part of a different cycle -> add edge in mst
+            int cost = (W[cur][u] + W[w][x]) - (W[cur][w] + W[u][x]); // cost of the new edge
+            int other = vertex_to_mst[x];
+            // check if there is already an edge between the mst-vertices, if there is -> force H edges of the edge with heigher cost
+            if(mst[id].contains(other)){
+                if(mst[id][other][4] < cost){
+                    // cost of the old edge are smaller, force current H edges
+                    if(!force(cur, u) || !force(u, x)){
+                        throw std::invalid_argument("new H edges could not be forced, on already existing higher edge"); // TODO remove or something
+                        return false; // if one of the H edges cannot be forced (which should not be possible, the instance cannot be solved TODO)
+                    }
+                }
+                else{
+                    // cost of new edges are smaller, force old H edges and add new H edges and cost to mst
+                    if(!force(mst[id][other][0], mst[id][other][1]) || !force(mst[id][other][2], mst[id][other][3])){
+                        throw std::invalid_argument("new H edges could not be forced, on already existing higher edge"); // TODO remove or something
+                        return false; // if one of the H edges cannot be forced (which should not be possible, the instance cannot be solved TODO)
+                    }
+                    // add new h edges and cost to graph
+                    mst[id][other] = {cur, w, u, x, cost};
+                    mst[other][id] = {cur, w, u, x, cost};
+                }
+            }
+            else{
+                // not edge between the two mst-vertices -> add h edges and cost
+                mst[id][other] = {cur, w, u, x, cost};
+                mst[other][id] = {cur, w, u, x, cost};
+            }
+        }
+        else{
+            // opposite edge is not part of an mst-vertsx
+            next.insert(x);
+        }
+
+        // check if back at the start
+        if(cur == start){
+            if(next.size() == 0){ // all vertices have been checked or there are unconnected parts (TODO that last part)
+                break;
+            }
+            // set new vertex for the beginning of the next cycle
+            start = *next.begin();
+            next.erase(start);
+            cur = start;
+            id++;
+            mst[id];
+            vertex_to_mst[cur] = id;
+            continue;
+        }
+    }
+    return true; // TODO temp
 
 }
 
