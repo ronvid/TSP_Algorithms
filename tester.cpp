@@ -23,9 +23,9 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool alwa
     std::unordered_map<int, std::unordered_map<int, bool>> e_edges;
     std::unordered_map<int, std::unordered_map<int, bool>> b_edges;
     std::unordered_map<int, std::unordered_map<int, bool>> s_edges;
-    int e_cost = 0; bool e_succ;
-    int b_cost = 0; bool b_succ;
-    int s_cost = 0; bool s_succ;
+    int e_cost = -1; bool e_succ = true;
+    int b_cost = -1; bool b_succ = true;
+    int s_cost = -1; bool s_succ = true;
 
     std::cout << "Size: " << generated->size() << " Seed: " << seed << std::endl;
 
@@ -40,8 +40,11 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool alwa
 
     // bruteforce
     if(brute){
+        const auto start{std::chrono::steady_clock::now()};
         b_succ = Bruteforce::BruteforceHamiltonianCycle(generated, &b_edges, &b_cost);
-        std::cout << "Bruteforce: " << b_cost << std::endl;
+        const auto finish{std::chrono::steady_clock::now()};
+        const std::chrono::duration<double> elapsed_seconds{finish - start};
+        std::cout << "Bruteforce: " << b_cost << " in " << elapsed_seconds << "." << std::endl;
     }
 
     // Schuster
@@ -53,20 +56,39 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool alwa
         std::cout << "Schuster: " << s_cost << " in " << elapsed_seconds << "." << std::endl;
     }
 
+    // check if all used algorithms came to the same conclusion
+    if((!epp && !brute) || (!epp && !schuster) || (!brute && !schuster)){
+        success = true;
+    }
+    else if(!epp){
+        success = (b_succ == s_succ) && (b_cost == s_cost);
+    }
+    else if(!brute){
+        success = (e_succ == s_succ) && (e_cost == s_cost);
+    }
+    else if(!schuster){
+        success = (e_succ == b_succ) && (e_cost == b_cost);
+    }
+    else{
+        success = (e_succ == b_succ) && (b_succ == s_succ) && (e_cost == b_cost) && (b_cost == s_cost);
+    }
+
     // TODO x_succ could be removed: algorithms can fail if graph has no cycle
-    if((e_succ && s_succ && e_cost == s_cost) || !epp || !schuster){
+    if(success){
         std::cout << " Success!" << std::endl;
     }
     else{
         std::cout << " Error!" << std::endl;
-        success = false;
         if(!e_succ){
             std::cout << "Eppstein failed" << std::endl;
         }
         if(!b_succ){
             std::cout << "Bruteforce failed" << std::endl;
         }
-        if(e_cost != b_cost){
+        if(!s_succ){
+            std::cout << "Schuster failed" << std::endl;
+        }
+        if(e_cost != b_cost || e_cost != s_cost || b_cost != s_cost){
             std::cout << "Costs in algorithms are different" << std::endl;
         }
     }
@@ -79,10 +101,13 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool alwa
         print_graph(&e_edges);
         std::cout << "Bruteforce:" << std::endl;
         print_graph(&b_edges);
+        std::cout << "Schuster:" << std::endl;
+        print_graph(&s_edges);
 
         // create dot files with the graphs
         to_dot(generated, &e_edges, "eppstein");
         to_dot(generated, &b_edges, "bruteforce");
+        to_dot(generated, &s_edges, "schuster");
         std::cout << "Graphs have been written to .gv files" << std::endl;
     }
 
@@ -127,7 +152,7 @@ int main(){
     std::cin >> in;
     if(in == 'n'){ run_schuster = false; }
 
-    for(int i = min_size; i < max_size; i++){
+    for(int i = min_size; i <= max_size; i++){
         bool stop = false;
         for(int j = 0; j < repetitions; j++){
             if(!compare_algorithms(i, run_eppstein, run_bruteforce, run_schuster)){
