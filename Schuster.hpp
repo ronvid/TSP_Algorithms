@@ -316,7 +316,7 @@ bool force(int v, int w){
     if(forced_in_current[v].contains(w)){
         return true; // already forced
     }
-    if(forced_in_current[v].size() >= 2 || forced_in_current[w].size() >= 2){ //NOTE changed from Eppstein
+    if(forced_in_current[v].size() > 2 || forced_in_current[w].size() > 2){ //NOTE changed from Eppstein
         return false; // three incident forced edges
     }
     forced_in_current[v][w] = forced_in_current[w][v] = true;
