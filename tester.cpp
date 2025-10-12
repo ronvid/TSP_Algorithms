@@ -9,7 +9,7 @@
 
 // will compare eppstein and bruteforce on a graph of the given size; if always_show is true, additional information will always be shown
 // returns false if the returned costs are not the same and will print additional information
-bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool always_show=false){
+bool compare_algorithms(int size, bool epp, bool brute, bool schuster, int type, bool always_show=false){
     // success flag
     bool success = true;
 
@@ -18,7 +18,7 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool alwa
     write_seed_to_file(seed, size); // write seed to file
 
     // generate graph of given size
-    std::unordered_map<int, std::unordered_map<int, int>>* generated = generate_random_graph(size, seed);
+    std::unordered_map<int, std::unordered_map<int, int>>* generated = generate_random_graph(size, seed, type);
     // init values
     std::unordered_map<int, std::unordered_map<int, bool>> e_edges;
     std::unordered_map<int, std::unordered_map<int, bool>> b_edges;
@@ -26,6 +26,8 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool alwa
     int e_cost = -1; bool e_succ = true;
     int b_cost = -1; bool b_succ = true;
     int s_cost = -1; bool s_succ = true;
+
+    //to_dot(generated, &e_edges, "g_test");
 
     std::cout << "Size: " << generated->size() << " Seed: " << seed << std::endl;
 
@@ -136,6 +138,10 @@ int main(){
     std::cout << "Enter number of graphs of one size to be tested[" << repetitions << "]" << std::endl;
     std::cin >> repetitions;
 
+    int type;
+    std::cout << "Enter type of graph to be generated[0=random cycle, 1=random, 3=high hamiltonian]" << std::endl;
+    std::cin >> type;
+
     char in;
     bool run_eppstein = true;
     std::cout << "Test Eppstein? (y/n)" << std::endl;
@@ -153,9 +159,10 @@ int main(){
     if(in == 'n'){ run_schuster = false; }
 
     for(int i = min_size; i <= max_size; i++){
+        if(type == HIGH_HAMILTONIAN && i%6 != 0) continue; // high hamiltonian only works with graphs size multiple of 6
         bool stop = false;
         for(int j = 0; j < repetitions; j++){
-            if(!compare_algorithms(i, run_eppstein, run_bruteforce, run_schuster)){
+            if(!compare_algorithms(i, run_eppstein, run_bruteforce, run_schuster, type)){
                 stop = true;
                 break;
             }
