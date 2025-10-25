@@ -26,7 +26,7 @@ namespace Schuster{
  */
 
 
-void remove(int v, int w);
+void remove(int v, int w, bool check_sc=true);
 void now_degree_two(int v);
 bool safely_remove(int u, int w);
 bool remove_third_leg(int v);
@@ -233,7 +233,7 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
     return cycle_found;
 }
 
-void remove(int v, int w){
+void remove(int v, int w, bool check_sc){
     //std::cout << "remove: " << v << " " << w << std::endl;
     // removes edge v-w from G
     bool was_original = G[v][w];
@@ -250,9 +250,11 @@ void remove(int v, int w){
     W[v].erase(w);
     W[w].erase(v);
 
-    // check if any of the vertices were part of a six cycle
-    remove_six_cycle_vertices(v);
-    remove_six_cycle_vertices(w);
+    // check if any of the vertices were part of a six cycle, in some cases (like contraction, a six cylce removal should not be checked)
+    if(check_sc){
+        remove_six_cycle_vertices(v);
+        remove_six_cycle_vertices(w);
+    }
 
     std::function<bool()> unremove = [v, w, was_original, was_forced, weight]{
         //std::cout << "unremove: " << v << " " << w << std::endl;
@@ -414,8 +416,8 @@ bool contract(int v){
     }
     int new_weight = W[v][u] + W[v][w]; // get weight of contracted edges
 
-    remove(u,v);
-    remove(v,w);
+    remove(u,v, false); // remove edge, but ignore six cycle checking
+    remove(v,w, false);
     G[u][w] = G[w][u] = false;
     forced_in_current[u][w] = forced_in_current[w][u] = true;
     G.erase(v);
