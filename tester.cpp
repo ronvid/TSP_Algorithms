@@ -14,7 +14,7 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, int type,
     bool success = true;
 
     // generate seed for
-    int seed = std::rand();
+    int seed = 1385197380;//10std::rand();
     write_seed_to_file(seed, size); // write seed to file
 
     // generate graph of given size
@@ -139,7 +139,7 @@ int main(){
     std::cin >> repetitions;
 
     int type;
-    std::cout << "Enter type of graph to be generated[0=random cycle, 1=random, 3=high hamiltonian]" << std::endl;
+    std::cout << "Enter type of graph to be generated[0=random cycle, 1=random regular, 2=high hamiltonian]" << std::endl;
     std::cin >> type;
 
     char in;
