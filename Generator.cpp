@@ -86,6 +86,10 @@ void random_cycle(std::unordered_map<int, std::unordered_map<int, int>>* W, int 
 }
 
 void random_regular(std::unordered_map<int, std::unordered_map<int, int>>* W, int n, int max_cost){
+
+    // needs to be a multiple of two (TODO could also not be a multiple of two, then one vertex would be of degree 2)
+    if(n%2 != 0) return;
+
     // create random regular graphs
 
     // insert vertices to the graph
@@ -256,6 +260,25 @@ phase_two:
     std::cout << "new values: U=" << U << "\nL: ";
     for(int x = 0; x < n*3; x++){std::cout << L[x] << " ";} std::cout << "\nI: ";
     for(int x = 0; x < n*3; x++){std::cout << I[x] << " ";} std::cout << std::endl;
+
+    // construct the graph
+    for(int x = 0; x < n*3; x+=2){
+        // get the groups of two connected points, connect the groups (vertices) and assign them a random value
+        int v = int(L[x]/3);
+        int u = int(L[x+1]/3);
+
+        add_edge(W, v, u, get_bounded_random(max_cost));
+    }
+
+    print_graph(W);
+
+    // check if the graph was constructed correctly (TODO remove this)
+    for(const auto& [v, e] : (*W)){
+        if(e.size() != 3){
+            std::cout << "Not deg3 !!" << std::endl;
+            while(true){;}
+        }
+    }
 }
 
 void high_hamiltonian(std::unordered_map<int, std::unordered_map<int, int>>* W, int n, int max_cost){
