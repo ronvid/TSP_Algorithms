@@ -92,6 +92,7 @@ void random_regular(std::unordered_map<int, std::unordered_map<int, int>>* W, in
 
     // create random regular graphs
 
+begin:
     // insert vertices to the graph
     for(int i = 0; i < n; i++){
         (*W)[i];
@@ -102,7 +103,6 @@ void random_regular(std::unordered_map<int, std::unordered_map<int, int>>* W, in
     int L[n*3];
     // array where the i'th value corresponds to the place of i in the array L
     int I[n*3];
-begin:
     // set values for L and I
     for(int i = 0; i < n*3; i++){
         L[i] = i;
@@ -111,164 +111,105 @@ begin:
     // number of unused points
     int U = n*3;
 
-phase_one:
     // first phase, while U >= 2d^2 == 18
     while(U >= 18){
         // get two random points that are not jet used
         int i = get_bounded_random(U);
         int j = get_bounded_random(U);
-        std::cout << "selected: i=" << i << " j=" << j << std::endl;
         // check that the values of i and j don't belong to the same group
-        if(int(L[i]/3) == int(L[j]/3)){
-            std::cout << "i and j in same group!" << std::endl;
-            continue;
-        }
+        if(int(L[i]/3) == int(L[j]/3)) continue;
+
         // check that i or j are not yet matched
-        if(I[i] >= U || I[j] >= U){ std::cout << "i or j already matched" << std::endl; continue; }
+        if(I[i] >= U || I[j] >= U) continue;
+
         // check that two other points of the groups are not jet matched with each other
-        for(int x = 0; x < 3; x++){
-            int g = int(L[i]/3)*3; // the first value of the group that L[i] belongs to
-            if(I[g+x] >= U && I[g+x]%2 == 0){ // check if other points of the group are matched, and if the matched value is at an even place
-                if(int(L[I[g+x]+1]/3) == int(L[j]/3)){std::cout << "-- already connected!" << std::endl; goto phase_one; }// check if other value of the pair is part of j's group
-            }
-            else if(I[g+x] >= U && I[g+x]%2 == 1){ // check if other points of the group are matched, and if the matched value is at an even place
-                if(int(L[I[g+x]-1]/3) == int(L[j]/3)){std::cout << "-- already connected!" << std::endl; goto phase_one; }// check if other value of the pair is part of j's group
-            }
-        }
+        if((*W)[I[i]].contains(I[j])) continue;
+
         // swap the values of i and j, with the last to elements in U
         tmp = L[U-1]; L[U-1] = L[i]; L[i] = tmp; // swap L values
         I[i] = U-1; I[L[i]] = i; // swap I values
         tmp = L[U-2]; L[U-2] = L[j]; L[j] = tmp; // swap L values
         I[j] = U-2; I[L[j]] = j; // swap I values
+        // add the edge to W with random cost
+        add_edge(W, int(L[i]/3), int(L[j]/3), get_bounded_random(max_cost));
         U -= 2;
 
-        std::cout << "new values: U=" << U << "\nL: ";
-        for(int x = 0; x < n*3; x++){std::cout << L[x] << " ";} std::cout << "\nI: ";
-        for(int x = 0; x < n*3; x++){std::cout << I[x] << " ";} std::cout << std::endl;
     }
+    std::cout << "----- phase one -----" << std::endl;
+    print_graph(W);
 
-    std::cout << "phase two" << std::endl;
-phase_two:
     // second phase, while U >= 2d == 6
     while(U >= 6){
         //randomly pic groups instead of points and check if they can be connected
         int v = get_bounded_random(n)*3; // set to the first element of the group
         int u = get_bounded_random(n)*3;
-        std::cout << "selected groups: v=" << v << " u=" << u << std::endl;
-        if(v == u){
-            std::cout << "v and u are equal!" << std::endl;
-            continue;
-        }
+        if(v == u) continue;
+
         // check if at least one point in each group is unconnected
-        if(I[v+0] >= U && I[v+1] >= U && I[v+2] >= U){ std::cout << "v fully connected" << std::endl; continue; }
-        if(I[u+0] >= U && I[u+1] >= U && I[u+2] >= U){ std::cout << "u fully connected" << std::endl; continue; }
+        if(I[v+0] >= U && I[v+1] >= U && I[v+2] >= U) continue;
+        if(I[u+0] >= U && I[u+1] >= U && I[u+2] >= U) continue;
 
         // check if v and u are already connected
-        for(int x = 0; x < 3; x++){
-            for(int y = 0; y < 3; y++){
-                if(I[v+x] >= U && I[v+x]%2 == 0){ // check if point v+x is already selected and if its value is at an even place
-                    if(L[I[v+x]+1] == u+y){ std::cout << "--0 already connected! v=" << v << " x=" << x << " u=" << u << " y=" << y << std::endl; goto phase_two; }
-                }
-                else if(I[v+x] >= U && I[v+x]%2 == 1){ // check if point v+x is already selected and if its value is at an even place
-                    if(L[I[v+x]-1] == u+y){ std::cout << "--1 already connected! v=" << v << " x=" << x << " u=" << u << " y=" << y << std::endl; goto phase_two; }
-                }
-            }
-        }
+        if((*W)[v/3].contains(u/3)) continue;
+
         // pick a random point in each group that is not yet connected
         int i, j;
         do{
             i = v + get_bounded_random(3);
+        }while(I[i] >= U);
+        do{
             j = u + get_bounded_random(3);
-            //std::cout << "random try: i=" << i << " j=" << j << std::endl;
-            //std::cout << "random try: I[i]=" << I[i] << " j=" << j << std::endl;
-        }while(I[i] >= U || I[j] >= U);
+        }while(I[j] >= U);
 
-        std::cout << "selected points: i=" << i << " j=" << j << " with U=" << U << std::endl;
         // swap the values of i and j, with the last to elements in U
         tmp = L[U-1]; L[U-1] = L[I[i]]; L[I[i]] = tmp; // swap L values
         I[tmp] = I[i]; I[i] = U-1; // swap I values
         tmp = L[U-2]; L[U-2] = L[I[j]]; L[I[j]] = tmp; // swap L values
         I[tmp] = I[j]; I[j] = U-2; // swap I values
+        // add the edge to W with random cost
+        add_edge(W, int(i/3), int(j/3), get_bounded_random(max_cost));
         U -= 2;
-
-        std::cout << "new values: U=" << U << "\nL: ";
-        for(int x = 0; x < n*3; x++){std::cout << L[x] << " ";} std::cout << "\nI: ";
-        for(int x = 0; x < n*3; x++){std::cout << I[x] << " ";} std::cout << std::endl;
     }
+    std::cout << "----- phase two -----" << std::endl;
+    print_graph(W);
 
     // phase three (TODO TODO this is very messy)
-    // add remaining 4 points to a set
-    std::unordered_set<int> points = {L[0], L[1], L[2], L[3]};
-    // create a graph H, where the points form an edge that belong to different groups and thier groups are not yet connected
-    std::unordered_map<int, std::unordered_set<int>> H;
-    for(int i : points){
-        for(int j : points){
-            if(int(i/3)*3 == int(j/3)*3) continue; // check if they are in different groups
-            // check if the group is already connected (TODO maybe something better?)
-            for(int x = 0; x < 3; x++){
-                for(int y = 0; y < 3; y++){
-                    if(I[i+x] >= U && I[i+x]%2 == 0){ // check if point v+x is already selected and if its value is at an even place
-                        if(L[I[i+x]+1] == j+y){ std::cout << "--0 already connected! i=" << i << " x=" << x << " j=" << j << " y=" << y << std::endl; goto already_connected; }
-                    }
-                    else if(I[i+x] >= U && I[i+x]%2 == 1){ // check if point v+x is already selected and if its value is at an even place
-                        if(L[I[i+x]-1] == j+y){ std::cout << "--1 already connected! i=" << i << " x=" << x << " j=" << j << " y=" << y << std::endl; goto already_connected; }
-                    }
-                }
-            }
-            // i and j are suitable
-            tmp = L[U-1]; L[U-1] = L[I[i]]; L[I[i]] = tmp; // swap L values
-            I[tmp] = I[i]; I[i] = U-1; // swap I values
-            tmp = L[U-2]; L[U-2] = L[I[j]]; L[I[j]] = tmp; // swap L values
-            I[tmp] = I[j]; I[j] = U-2; // swap I values
-            U -= 2;
+    // find all possible pairs of vertices (d!=3) and add them to a vector
+    std::vector<std::pair<int, int>> pairs;
 
-            std::cout << "new values: U=" << U << "\nL: ";
-            for(int x = 0; x < n*3; x++){std::cout << L[x] << " ";} std::cout << "\nI: ";
-            for(int x = 0; x < n*3; x++){std::cout << I[x] << " ";} std::cout << std::endl;
+    for(const auto& [v,e] : *W){
+        if(e.size() == 3) continue;
+        for(const auto& [u,w] : *W){
+            if(w.size() == 3 || v == u) continue;
 
-            goto last_two;
-
-        already_connected:;
+            pairs.push_back({v,u});
         }
     }
-    // no suitable point was found -> retry algorithm
-    goto begin;
-
-    last_two:
-    // set last remaining points
-    int i = L[0]; int j = L[1];
-    // check if last two points are suitable, otherwise retry algorithm
-    if(int(i/3)*3 == int(j/3)*3) goto begin; // check if they are in different groups
-    // check if the group is already connected (TODO maybe something better?)
-    for(int x = 0; x < 3; x++){
-        for(int y = 0; y < 3; y++){
-            if(I[i+x] >= U && I[i+x]%2 == 0){ // check if point v+x is already selected and if its value is at an even place
-                if(L[I[i+x]+1] == j+y){ std::cout << "--0 already connected! i=" << i << " x=" << x << " j=" << j << " y=" << y << std::endl; goto begin; }
-            }
-            else if(I[i+x] >= U && I[i+x]%2 == 1){ // check if point v+x is already selected and if its value is at an even place
-                if(L[I[i+x]-1] == j+y){ std::cout << "--1 already connected! i=" << i << " x=" << x << " j=" << j << " y=" << y << std::endl; goto begin; }
+    // pick random pairs from the vector and add it with a chance of x/9 (where x is the product of (3-d_v) * (3-d_u))
+    std::pair<int,int> pick;
+    while(pairs.size() > 0){
+        pick = pairs[get_bounded_random(pairs.size())];
+        int chance = (3 - (*W)[pick.first].size()) * (3 - (*W)[pick.second].size());
+        // try to insert, <chance>-times, with probability 1:9
+        for(int i = 0; i < chance; i++){
+            if(get_bounded_random(9) == 0){
+                add_edge(W, pick.first, pick.second, get_bounded_random(max_cost));
+                pairs.clear();
             }
         }
     }
 
-    tmp = L[U-1]; L[U-1] = L[I[i]]; L[I[i]] = tmp; // swap L values
-    I[tmp] = I[i]; I[i] = U-1; // swap I values
-    tmp = L[U-2]; L[U-2] = L[I[j]]; L[I[j]] = tmp; // swap L values
-    I[tmp] = I[j]; I[j] = U-2; // swap I values
-    U -= 2;
-
-    std::cout << "new values: U=" << U << "\nL: ";
-    for(int x = 0; x < n*3; x++){std::cout << L[x] << " ";} std::cout << "\nI: ";
-    for(int x = 0; x < n*3; x++){std::cout << I[x] << " ";} std::cout << std::endl;
-
-    // construct the graph
-    for(int x = 0; x < n*3; x+=2){
-        // get the groups of two connected points, connect the groups (vertices) and assign them a random value
-        int v = int(L[x]/3);
-        int u = int(L[x+1]/3);
-
-        add_edge(W, v, u, get_bounded_random(max_cost));
+    // check if the last two remaining vertices can be connected, otherwise restart graph generation
+    int v = -1; int w = -1;
+    for(const auto& [e,u] : *W){
+        if(u.size() == 3) continue;
+        else if(v == -1) v = e;
+        else w = e;
     }
+    if(v == -1 || w == -1) goto begin;
+
+    // add last pair to W
+    add_edge(W, v, w, get_bounded_random(max_cost));
 
     print_graph(W);
 
@@ -279,6 +220,77 @@ phase_two:
             while(true){;}
         }
     }
+
+
+    // // add remaining 4 points to a set
+    // std::unordered_set<int> points = {L[0], L[1], L[2], L[3]};
+    // // create a graph H, where the points form an edge that belong to different groups and thier groups are not yet connected
+    // std::unordered_map<int, std::unordered_set<int>> H;
+    // for(int i : points){
+    //     for(int j : points){
+    //         if(int(i/3)*3 == int(j/3)*3) continue; // check if they are in different groups
+    //         // check if the group is already connected (TODO maybe something better?)
+    //         for(int x = 0; x < 3; x++){
+    //             for(int y = 0; y < 3; y++){
+    //                 if(I[i+x] >= U && I[i+x]%2 == 0){ // check if point v+x is already selected and if its value is at an even place
+    //                     if(L[I[i+x]+1] == j+y) goto already_connected;
+    //                 }
+    //                 else if(I[i+x] >= U && I[i+x]%2 == 1){ // check if point v+x is already selected and if its value is at an even place
+    //                     if(L[I[i+x]-1] == j+y) goto already_connected;
+    //                 }
+    //             }
+    //         }
+    //         // i and j are suitable
+    //         tmp = L[U-1]; L[U-1] = L[I[i]]; L[I[i]] = tmp; // swap L values
+    //         I[tmp] = I[i]; I[i] = U-1; // swap I values
+    //         tmp = L[U-2]; L[U-2] = L[I[j]]; L[I[j]] = tmp; // swap L values
+    //         I[tmp] = I[j]; I[j] = U-2; // swap I values
+    //         U -= 2;
+    //
+    //         goto last_two;
+    //
+    //     already_connected:;
+    //     }
+    // }
+    // // no suitable point was found -> retry algorithm
+    // goto begin;
+    //
+    // last_two:
+    // // set last remaining points
+    // int i = L[0]; int j = L[1];
+    // // check if last two points are suitable, otherwise retry algorithm
+    // if(int(i/3)*3 == int(j/3)*3) goto begin; // check if they are in different groups
+    // // check if the group is already connected (TODO maybe something better?)
+    // for(int x = 0; x < 3; x++){
+    //     for(int y = 0; y < 3; y++){
+    //         if(I[i+x] >= U && I[i+x]%2 == 0){ // check if point v+x is already selected and if its value is at an even place
+    //             if(L[I[i+x]+1] == j+y) goto begin;
+    //         }
+    //         else if(I[i+x] >= U && I[i+x]%2 == 1){ // check if point v+x is already selected and if its value is at an even place
+    //             if(L[I[i+x]-1] == j+y) goto begin;
+    //         }
+    //     }
+    // }
+    //
+    // tmp = L[U-1]; L[U-1] = L[I[i]]; L[I[i]] = tmp; // swap L values
+    // I[tmp] = I[i]; I[i] = U-1; // swap I values
+    // tmp = L[U-2]; L[U-2] = L[I[j]]; L[I[j]] = tmp; // swap L values
+    // I[tmp] = I[j]; I[j] = U-2; // swap I values
+    // U -= 2;
+    //
+    // std::cout << "new values: U=" << U << "\nL: ";
+    // for(int x = 0; x < n*3; x++){std::cout << L[x] << " ";} std::cout << "\nI: ";
+    // for(int x = 0; x < n*3; x++){std::cout << I[x] << " ";} std::cout << std::endl;
+    //
+    // // construct the graph
+    // for(int x = 0; x < n*3; x+=2){
+    //     // get the groups of two connected points, connect the groups (vertices) and assign them a random value
+    //     int v = int(L[x]/3);
+    //     int u = int(L[x+1]/3);
+    //
+    //     add_edge(W, v, u, get_bounded_random(max_cost));
+    // }
+    //
 }
 
 void high_hamiltonian(std::unordered_map<int, std::unordered_map<int, int>>* W, int n, int max_cost){
