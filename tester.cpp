@@ -14,7 +14,7 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, int type,
     bool success = true;
 
     // generate seed for
-    int seed = 1385197380;//10std::rand();
+    int seed = std::rand();
     write_seed_to_file(seed, size); // write seed to file
 
     // generate graph of given size
