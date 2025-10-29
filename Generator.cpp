@@ -22,7 +22,7 @@ int get_bounded_random(int max){
 
 void write_seed_to_file(int seed, int size){
     std::ofstream seed_file;
-    seed_file.open("last_seed.txt");
+    seed_file.open(".last_seed.txt");
     seed_file << seed << "/" << size << "\n";
     seed_file.close();
 }
