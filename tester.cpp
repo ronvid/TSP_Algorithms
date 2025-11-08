@@ -153,6 +153,11 @@ int main(){
     file << "";
     file.close();
 
+    // clear time measurement files (TODO remove)
+    file.open(".six_cycles.txt");
+    file << "";
+    file.close();
+
     // init rng
     std::srand(std::time({}));
 
@@ -191,6 +196,7 @@ int main(){
 
     for(int i = min_size; i <= max_size; i++){
         if(type == HIGH_HAMILTONIAN && i%6 != 0) continue; // high hamiltonian only works with graphs size multiple of 6
+        if(type == RANDOM_REGULAR && i%2 != 0) continue; // random regular only  works with multiple of 2
         bool stop = false;
         for(int j = 0; j < repetitions; j++){
             if(!compare_algorithms(i, run_eppstein, run_bruteforce, run_schuster, type)){
