@@ -38,6 +38,12 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, int type,
         const auto finish{std::chrono::steady_clock::now()};
         const std::chrono::duration<double> elapsed_seconds{finish - start};
         std::cout << "Eppstein: " << e_cost << " in " << elapsed_seconds << "." << std::endl;
+
+        // open file and write runtime
+        std::ofstream file;
+        file.open (".e_runtime.txt", std::ios::out | std::ios::app);
+        file << elapsed_seconds.count() << "\n";
+        file.close();
     }
 
     // bruteforce
@@ -47,6 +53,12 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, int type,
         const auto finish{std::chrono::steady_clock::now()};
         const std::chrono::duration<double> elapsed_seconds{finish - start};
         std::cout << "Bruteforce: " << b_cost << " in " << elapsed_seconds << "." << std::endl;
+
+        // open file and write runtime
+        std::ofstream file;
+        file.open (".b_runtime.txt", std::ios::out | std::ios::app);
+        file << elapsed_seconds.count() << "\n";
+        file.close();
     }
 
     // Schuster
@@ -56,6 +68,12 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, int type,
         const auto finish{std::chrono::steady_clock::now()};
         const std::chrono::duration<double> elapsed_seconds{finish - start};
         std::cout << "Schuster: " << s_cost << " in " << elapsed_seconds << "." << std::endl;
+
+        // open file and write runtime
+        std::ofstream file;
+        file.open (".s_runtime.txt", std::ios::out | std::ios::app);
+        file << elapsed_seconds.count() << "\n";
+        file.close();
     }
 
     // check if all used algorithms came to the same conclusion
@@ -121,6 +139,19 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, int type,
 }
 
 int main(){
+
+
+    // clear time measurement files
+    std::ofstream file;
+    file.open(".e_runtime.txt");
+    file << "";
+    file.close();
+    file.open(".b_runtime.txt");
+    file << "";
+    file.close();
+    file.open(".s_runtime.txt");
+    file << "";
+    file.close();
 
     // init rng
     std::srand(std::time({}));
