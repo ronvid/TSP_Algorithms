@@ -31,10 +31,10 @@ file.close()
 
 # for v in values:
 #    print(v)
-#     plt.plot(e_values)
+plt.plot(e_values)
 plt.plot(b_values)
 plt.plot(s_values)
-plt.yscale('log')
+plt.yscale('log', base=2)
 plt.ylabel('some numbers')
 
 plt.show()
