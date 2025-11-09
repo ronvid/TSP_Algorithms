@@ -1,6 +1,7 @@
 #include "Eppstein.hpp"
 #include "Bruteforce.hpp"
 #include "Schuster.hpp"
+#include "Schuster_New_Heuristic.hpp"
 
 #include "Generator.cpp"
 
@@ -9,7 +10,7 @@
 
 // will compare eppstein and bruteforce on a graph of the given size; if always_show is true, additional information will always be shown
 // returns false if the returned costs are not the same and will print additional information
-bool compare_algorithms(int size, bool epp, bool brute, bool schuster, int type, bool always_show=false){
+bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool schuster_nh, int type, bool always_show=false){
     // success flag
     bool success = true;
 
@@ -23,9 +24,11 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, int type,
     std::unordered_map<int, std::unordered_map<int, bool>> e_edges;
     std::unordered_map<int, std::unordered_map<int, bool>> b_edges;
     std::unordered_map<int, std::unordered_map<int, bool>> s_edges;
+    std::unordered_map<int, std::unordered_map<int, bool>> snh_edges;
     int e_cost = -1; bool e_succ = true;
     int b_cost = -1; bool b_succ = true;
     int s_cost = -1; bool s_succ = true;
+    int snh_cost = -1; bool snh_succ = true;
 
     //to_dot(generated, &e_edges, "g_test");
 
@@ -76,6 +79,21 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, int type,
         file.close();
     }
 
+    // Schuster with new heuristic
+    if(schuster_nh){
+        const auto start{std::chrono::steady_clock::now()};
+        snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost);
+        const auto finish{std::chrono::steady_clock::now()};
+        const std::chrono::duration<double> elapsed_seconds{finish - start};
+        std::cout << "Schuster (new heuristic): " << snh_cost << " in " << elapsed_seconds << "." << std::endl;
+
+        // open file and write runtime
+        std::ofstream file;
+        file.open (".snh_runtime.txt", std::ios::out | std::ios::app);
+        file << elapsed_seconds.count() << "\n";
+        file.close();
+    }
+
     // check if all used algorithms came to the same conclusion
     if((!epp && !brute) || (!epp && !schuster) || (!brute && !schuster)){
         success = true;
@@ -107,6 +125,9 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, int type,
         }
         if(!s_succ){
             std::cout << "Schuster failed" << std::endl;
+        }
+        if(!snh_succ){
+            std::cout << "Schuster (new heuristic) failed" << std::endl;
         }
         if(e_cost != b_cost || e_cost != s_cost || b_cost != s_cost){
             std::cout << "Costs in algorithms are different" << std::endl;
@@ -152,6 +173,9 @@ int main(){
     file.open(".s_runtime.txt");
     file << "";
     file.close();
+    file.open(".snh_runtime.txt");
+    file << "";
+    file.close();
 
     // clear time measurement files (TODO remove)
     file.open(".six_cycles.txt");
@@ -194,12 +218,22 @@ int main(){
     std::cin >> in;
     if(in == 'n'){ run_schuster = false; }
 
+    bool run_schuster_nh = true;
+    std::cout << "Test Schuser (new heuristic)? (y/n)" << std::endl;
+    std::cin >> in;
+    if(in == 'n'){ run_schuster_nh = false; }
+
+    // write stats to file
+    file.open(".stats.txt");
+    file << min_size <<"\n" << max_size << "\n" << repetitions << "\n";
+    file.close();
+
     for(int i = min_size; i <= max_size; i++){
         if(type == HIGH_HAMILTONIAN && i%6 != 0) continue; // high hamiltonian only works with graphs size multiple of 6
         if(type == RANDOM_REGULAR && i%2 != 0) continue; // random regular only  works with multiple of 2
         bool stop = false;
         for(int j = 0; j < repetitions; j++){
-            if(!compare_algorithms(i, run_eppstein, run_bruteforce, run_schuster, type)){
+            if(!compare_algorithms(i, run_eppstein, run_bruteforce, run_schuster, run_schuster_nh, type)){
                 stop = true;
                 break;
             }

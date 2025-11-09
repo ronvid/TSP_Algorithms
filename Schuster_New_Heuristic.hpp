@@ -1,5 +1,5 @@
-#ifndef SCHUSTER_HPP
-#define SCHUSTER_HPP
+#ifndef SCHUSTER_NEW_HEURISTIC_HPP
+#define SCHUSTER_NEW_HEURISTIC_HPP
 
 #include <map>
 #include <set>
@@ -15,7 +15,7 @@
 #include <stdexcept>
 #include <iostream> // TODO remove
 
-namespace Schuster{
+namespace Schuster_New_Heuristic{
 
 /**
  * This is a C++ version of David Eppsteins Implementation of Eppsteins Algorithm for finding
@@ -75,6 +75,9 @@ int get_unforced_neighbour(int v);
 // set of six cycles (represented as sets)
 std::set<std::set<int>> six_cycles; // TODO mabe six cycle as unordered set
 
+// if G has less than this amount of vertices, six cycles will be ignored and no longer managed
+const int required_for_six_cycle = 10;
+
 std::function<bool()> main_ch = []{
     //std::cout << "main" << std::endl;
     // main event dispatcher
@@ -98,8 +101,8 @@ std::function<bool()> main_ch = []{
     int w = -1;
     if(forced_vertices.size() > 0){
         //std::cout << "forced: " << forced_vertices.size() << " sc: " << six_cycles.size() << std::endl;
-        // pick edge from a six cycle
-        if(six_cycles.size() > 0){
+        // pick edge from a six cycle IF there are at least 10 vertices in the graph
+        if(G.size() >= required_for_six_cycle && six_cycles.size() > 0){
             //std::cout << "sc: " << six_cycles.size() << std::endl;
             std::set<int> most; // six cycle with most forced neighbours
             int highest_count = 0;
@@ -260,7 +263,7 @@ void remove(int v, int w, bool check_sc){
     W[w].erase(v);
 
     // check if any of the vertices were part of a six cycle, in some cases (like contraction, a six cylce removal should not be checked)
-    if(check_sc){
+    if(G.size() >= required_for_six_cycle && check_sc){
         remove_six_cycle_vertices(v);
         remove_six_cycle_vertices(w);
     }
@@ -346,12 +349,15 @@ bool force(int v, int w){
     int weight = W[v][w];
     current_weight += weight;
 
-    // check if a six cycle edge was forced
-    remove_six_cycle_vertices(v,w);
+    // only check six cycles if there are more enough vertices in the graph
+    if(G.size() >= required_for_six_cycle){
+        // check if a six cycle edge was forced
+        remove_six_cycle_vertices(v,w);
 
-    // check if any of the forced vertices are part of a six cycle
-    check_for_six_cycle(v);
-    check_for_six_cycle(w);
+        // check if any of the forced vertices are part of a six cycle
+        check_for_six_cycle(v);
+        check_for_six_cycle(w);
+    }
 
     std::function<bool()> unforce = [v, w, was_original, v_not_previously_forced, w_not_previously_forced, weight]{
         //std::cout << "unforce: " << v << " " << w << std::endl;
@@ -454,8 +460,11 @@ bool contract(int v){
     };
     actions.push_back(uncontract);
 
-    check_for_six_cycle(w);
-    check_for_six_cycle(u);
+    // only check if G has enough vertices
+    if(G.size() >= required_for_six_cycle){
+        check_for_six_cycle(w);
+        check_for_six_cycle(u);
+    }
 
     actions.push_back(main_ch);
 
