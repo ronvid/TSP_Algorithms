@@ -76,7 +76,7 @@ int get_unforced_neighbour(int v);
 std::set<std::set<int>> six_cycles; // TODO mabe six cycle as unordered set
 
 // if G has less than this amount of vertices, six cycles will be ignored and no longer managed
-const int required_for_six_cycle = 10;
+long unsigned int required_for_six_cycle;
 
 std::function<bool()> main_ch = []{
     //std::cout << "main" << std::endl;
@@ -211,6 +211,10 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
         forced_in_input[v];
         forced_in_current[v];
     }
+
+    // set dynamic value for six cycle requirement
+    required_for_six_cycle = G.size()*0.8;
+    if(required_for_six_cycle < 6) required_for_six_cycle = 6;
 
     actions.push_back(main_ch);
 
