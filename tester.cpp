@@ -59,7 +59,7 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool schu
 
         // open file and write runtime
         std::ofstream file;
-        file.open (".b_runtime.txt", std::ios::out | std::ios::app);
+        file.open(".b_runtime.txt", std::ios::out | std::ios::app);
         file << elapsed_seconds.count() << "\n";
         file.close();
     }
@@ -74,24 +74,27 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool schu
 
         // open file and write runtime
         std::ofstream file;
-        file.open (".s_runtime.txt", std::ios::out | std::ios::app);
+        file.open(".s_runtime.txt", std::ios::out | std::ios::app);
         file << elapsed_seconds.count() << "\n";
         file.close();
     }
 
     // Schuster with new heuristic
     if(schuster_nh){
-        const auto start{std::chrono::steady_clock::now()};
-        snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost);
-        const auto finish{std::chrono::steady_clock::now()};
-        const std::chrono::duration<double> elapsed_seconds{finish - start};
-        std::cout << "Schuster (new heuristic): " << snh_cost << " in " << elapsed_seconds << "." << std::endl;
+        for(long unsigned int h : {10, 20, 30, 40, 50, 60}){
+            const auto start{std::chrono::steady_clock::now()};
+            snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost, h);
+            const auto finish{std::chrono::steady_clock::now()};
+            const std::chrono::duration<double> elapsed_seconds{finish - start};
+            std::cout << "Schuster (h = " << h << "): "<< snh_cost << " in " << elapsed_seconds << "." << std::endl;
 
-        // open file and write runtime
-        std::ofstream file;
-        file.open (".snh_runtime.txt", std::ios::out | std::ios::app);
-        file << elapsed_seconds.count() << "\n";
-        file.close();
+            // open file and write runtime
+            std::ofstream file;
+            std::string path = ".snh_runtime_" + std::to_string(h) + ".txt";
+            file.open(path, std::ios::out | std::ios::app);
+            file << elapsed_seconds.count() << "\n";
+            file.close();
+        }
     }
 
     // check if all used algorithms came to the same conclusion
@@ -174,6 +177,24 @@ int main(){
     file << "";
     file.close();
     file.open(".snh_runtime.txt");
+    file << "";
+    file.close();
+    file.open(".snh_runtime_10.txt");
+    file << "";
+    file.close();
+    file.open(".snh_runtime_20.txt");
+    file << "";
+    file.close();
+    file.open(".snh_runtime_30.txt");
+    file << "";
+    file.close();
+    file.open(".snh_runtime_40.txt");
+    file << "";
+    file.close();
+    file.open(".snh_runtime_50.txt");
+    file << "";
+    file.close();
+    file.open(".snh_runtime_60.txt");
     file << "";
     file.close();
 

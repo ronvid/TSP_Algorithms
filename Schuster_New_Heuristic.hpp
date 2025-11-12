@@ -172,7 +172,7 @@ edge_found:
 
 
 bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weights,
-                              std::unordered_map<int, std::unordered_map<int, bool>>* forced_edges, int* cost){
+                              std::unordered_map<int, std::unordered_map<int, bool>>* forced_edges, int* cost, long unsigned int min_heuristic=0, float procentual_heuristic=1.0){
 
     // initialize/reset used variables
     current_weight = 0;
@@ -212,9 +212,11 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
         forced_in_current[v];
     }
 
+    // set fixed value for heuristic
+    if(min_heuristic != 0) required_for_six_cycle = min_heuristic;
     // set dynamic value for six cycle requirement
-    required_for_six_cycle = G.size()*0.8;
-    if(required_for_six_cycle < 6) required_for_six_cycle = 6;
+    if(procentual_heuristic != 1.0) required_for_six_cycle = G.size()*procentual_heuristic;
+    //if(required_for_six_cycle < 6) required_for_six_cycle = 6;
 
     actions.push_back(main_ch);
 
