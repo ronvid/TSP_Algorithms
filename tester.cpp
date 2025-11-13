@@ -10,7 +10,7 @@
 
 // will compare eppstein and bruteforce on a graph of the given size; if always_show is true, additional information will always be shown
 // returns false if the returned costs are not the same and will print additional information
-bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool schuster_nh, int type, bool always_show=false){
+bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool schuster_nh, int type, bool nh_fixed, bool nh_dynamic, bool always_show=false){
     // success flag
     bool success = true;
 
@@ -80,13 +80,31 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool schu
     }
 
     // Schuster with new heuristic
-    if(schuster_nh){
+    if(schuster_nh && nh_fixed){
+        // test fixed values
         for(long unsigned int h : {10, 20, 30, 40, 50, 60}){
             const auto start{std::chrono::steady_clock::now()};
             snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost, h);
             const auto finish{std::chrono::steady_clock::now()};
             const std::chrono::duration<double> elapsed_seconds{finish - start};
             std::cout << "Schuster (h = " << h << "): "<< snh_cost << " in " << elapsed_seconds << "." << std::endl;
+
+            // open file and write runtime
+            std::ofstream file;
+            std::string path = ".snh_runtime_" + std::to_string(h) + ".txt";
+            file.open(path, std::ios::out | std::ios::app);
+            file << elapsed_seconds.count() << "\n";
+            file.close();
+        }
+    }
+    if(schuster_nh && nh_dynamic){
+        // test dynamic values
+        for(float h : {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1}){
+            const auto start{std::chrono::steady_clock::now()};
+            snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost, 0, h);
+            const auto finish{std::chrono::steady_clock::now()};
+            const std::chrono::duration<double> elapsed_seconds{finish - start};
+            std::cout << "Schuster (h = " << h << "%): "<< snh_cost << " in " << elapsed_seconds << "." << std::endl;
 
             // open file and write runtime
             std::ofstream file;
@@ -244,6 +262,18 @@ int main(){
     std::cin >> in;
     if(in == 'n'){ run_schuster_nh = false; }
 
+    // ask what kind of heuristic should be tested
+    bool nh_fixed = true;
+    bool nh_dynamic = true;
+    if(run_schuster_nh){
+        std::cout << "Test fixed heuristic (y/n)" << std::endl;
+        std::cin >> in;
+        if(in == 'n'){ nh_fixed = false; }
+        std::cout << "Test dynamic heuristic (y/n)" << std::endl;
+        std::cin >> in;
+        if(in == 'n'){ nh_dynamic = false; }
+    }
+
     // write stats to file
     file.open(".stats.txt");
     file << min_size <<"\n" << max_size << "\n" << repetitions << "\n";
@@ -254,7 +284,7 @@ int main(){
         if(type == RANDOM_REGULAR && i%2 != 0) continue; // random regular only  works with multiple of 2
         bool stop = false;
         for(int j = 0; j < repetitions; j++){
-            if(!compare_algorithms(i, run_eppstein, run_bruteforce, run_schuster, run_schuster_nh, type)){
+            if(!compare_algorithms(i, run_eppstein, run_bruteforce, run_schuster, run_schuster_nh, type, nh_fixed, nh_dynamic)){
                 stop = true;
                 break;
             }
