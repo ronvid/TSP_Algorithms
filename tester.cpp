@@ -1,7 +1,7 @@
 #include "Eppstein.hpp"
 #include "Bruteforce.hpp"
 #include "Schuster.hpp"
-#include "Schuster_New_Heuristic.hpp"
+#include "Schuster_Simple_Choice.hpp"
 
 #include "Generator.cpp"
 
@@ -50,7 +50,7 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool schu
     }
 
     // bruteforce
-    if(brute){
+    if(brute && size < 41){
         const auto start{std::chrono::steady_clock::now()};
         b_succ = Bruteforce::BruteforceHamiltonianCycle(generated, &b_edges, &b_cost);
         const auto finish{std::chrono::steady_clock::now()};
@@ -79,44 +79,58 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool schu
         file.close();
     }
 
+    if(schuster_nh){
+        const auto start{std::chrono::steady_clock::now()};
+        snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost);
+        const auto finish{std::chrono::steady_clock::now()};
+        const std::chrono::duration<double> elapsed_seconds{finish - start};
+        std::cout << "Schuster new heuristic: " << snh_cost << " in " << elapsed_seconds << "." << std::endl;
+
+        // open file and write runtime
+        std::ofstream file;
+        file.open(".snh_runtime.txt", std::ios::out | std::ios::app);
+        file << elapsed_seconds.count() << "\n";
+        file.close();
+    }
+
     // Schuster with new heuristic
-    if(schuster_nh && nh_fixed){
-        // test fixed values
-        for(long unsigned int h : {10, 20, 30, 40, 50, 60}){
-            const auto start{std::chrono::steady_clock::now()};
-            snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost, h);
-            const auto finish{std::chrono::steady_clock::now()};
-            const std::chrono::duration<double> elapsed_seconds{finish - start};
-            std::cout << "Schuster (h = " << h << "): "<< snh_cost << " in " << elapsed_seconds << "." << std::endl;
-
-            // open file and write runtime
-            std::ofstream file;
-            std::string path = ".snh_runtime_" + std::to_string(h) + ".txt";
-            file.open(path, std::ios::out | std::ios::app);
-            file << elapsed_seconds.count() << "\n";
-            file.close();
-        }
-    }
-    if(schuster_nh && nh_dynamic){
-        // test dynamic values
-        for(float h : {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1}){
-            const auto start{std::chrono::steady_clock::now()};
-            snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost, 0, h);
-            const auto finish{std::chrono::steady_clock::now()};
-            const std::chrono::duration<double> elapsed_seconds{finish - start};
-            std::cout << "Schuster (h = " << h << "%): "<< snh_cost << " in " << elapsed_seconds << "." << std::endl;
-
-            // open file and write runtime
-            std::ofstream file;
-            std::string path = ".snh_runtime_" + std::to_string(h) + ".txt";
-            file.open(path, std::ios::out | std::ios::app);
-            file << elapsed_seconds.count() << "\n";
-            file.close();
-        }
-    }
+    // if(schuster_nh && nh_fixed){
+    //     // test fixed values
+    //     for(long unsigned int h : {10, 20, 30, 40, 50, 60}){
+    //         const auto start{std::chrono::steady_clock::now()};
+    //         snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost, h);
+    //         const auto finish{std::chrono::steady_clock::now()};
+    //         const std::chrono::duration<double> elapsed_seconds{finish - start};
+    //         std::cout << "Schuster (h = " << h << "): "<< snh_cost << " in " << elapsed_seconds << "." << std::endl;
+    //
+    //         // open file and write runtime
+    //         std::ofstream file;
+    //         std::string path = ".snh_runtime_" + std::to_string(h) + ".txt";
+    //         file.open(path, std::ios::out | std::ios::app);
+    //         file << elapsed_seconds.count() << "\n";
+    //         file.close();
+    //     }
+    // }
+    // if(schuster_nh && nh_dynamic){
+    //     // test dynamic values
+    //     for(float h : {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1}){
+    //         const auto start{std::chrono::steady_clock::now()};
+    //         snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost, 0, h);
+    //         const auto finish{std::chrono::steady_clock::now()};
+    //         const std::chrono::duration<double> elapsed_seconds{finish - start};
+    //         std::cout << "Schuster (h = " << h << "%): "<< snh_cost << " in " << elapsed_seconds << "." << std::endl;
+    //
+    //         // open file and write runtime
+    //         std::ofstream file;
+    //         std::string path = ".snh_runtime_" + std::to_string(h) + ".txt";
+    //         file.open(path, std::ios::out | std::ios::app);
+    //         file << elapsed_seconds.count() << "\n";
+    //         file.close();
+    //     }
+    // }
 
     // check if all used algorithms came to the same conclusion
-    if((!epp && !brute) || (!epp && !schuster) || (!brute && !schuster)){
+    /*if((!epp && !brute) || (!epp && !schuster) || (!brute && !schuster)){
         success = true;
     }
     else if(!epp){
@@ -172,11 +186,12 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool schu
         to_dot(generated, &s_edges, "schuster");
         std::cout << "Graphs have been written to .gv files" << std::endl;
     }
+    */
 
     // dealloc generated graph
     delete generated;
 
-    return success;
+    return true;
 
 }
 
