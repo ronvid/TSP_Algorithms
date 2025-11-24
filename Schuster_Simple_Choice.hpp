@@ -470,7 +470,7 @@ bool check_for_six_cycle(int v){
     // check if v is part of a six cycle
 
     // check that no six cycle was already found
-    if(six_cycle == nullptr) return false;
+    if(six_cycle != nullptr) return false;
 
     // v needs to have one forced edge and two unorced edges
     if(G[v].size() != 3) return false;
