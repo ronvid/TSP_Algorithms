@@ -96,7 +96,7 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool schu
     // Schuster with new heuristic
     // if(schuster_nh && nh_fixed){
     //     // test fixed values
-    //     for(long unsigned int h : {10, 20, 30, 40, 50, 60}){
+    //     for(long unsigned int h : {10, 20, 30}){
     //         const auto start{std::chrono::steady_clock::now()};
     //         snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost, h);
     //         const auto finish{std::chrono::steady_clock::now()};
@@ -113,7 +113,7 @@ bool compare_algorithms(int size, bool epp, bool brute, bool schuster, bool schu
     // }
     // if(schuster_nh && nh_dynamic){
     //     // test dynamic values
-    //     for(float h : {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1}){
+    //     for(float h : {0.15, 0.30, 0.45}){
     //         const auto start{std::chrono::steady_clock::now()};
     //         snh_succ = Schuster_New_Heuristic::ShortestHamiltonianCycle(generated, &snh_edges, &snh_cost, 0, h);
     //         const auto finish{std::chrono::steady_clock::now()};
@@ -228,6 +228,18 @@ int main(){
     file << "";
     file.close();
     file.open(".snh_runtime_60.txt");
+    file << "";
+    file.close();
+
+    file.open(".snh_runtime_0.150000.txt");
+    file << "";
+    file.close();
+
+    file.open(".snh_runtime_0.300000.txt");
+    file << "";
+    file.close();
+
+    file.open(".snh_runtime_0.450000.txt");
     file << "";
     file.close();
 
