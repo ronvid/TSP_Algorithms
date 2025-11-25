@@ -9,22 +9,22 @@ values_60 = []
 values_e  = []
 values_s  = []
 
-# read stats file
-file = open(".stats.txt", "r")
-min_size = int(file.readline())
-max_size = int(file.readline())
-repititions = int(file.readline())
+min_size = 6
+max_size = 66
+increment = 6
+
+repititions = 3
 
 # padding
-for i in range(min_size):
-    values_10.append(0)
-    values_20.append(0)
-    values_30.append(0)
-    values_40.append(0)
-    values_50.append(0)
-    values_60.append(0)
-    values_e.append(0)
-    values_s.append(0)
+# for i in range(min_size):
+#     values_10.append(0)
+#     values_20.append(0)
+#     values_30.append(0)
+#     values_40.append(0)
+#     values_50.append(0)
+#     values_60.append(0)
+#     values_e.append(0)
+#     values_s.append(0)
 
 # read runtimes
 file = open(".snh_runtime_10.txt", "r")
@@ -154,31 +154,41 @@ while line:
         tmp = 0
 file.close()
 
-vs , = plt.plot(values_s )
-#v10, = plt.plot(values_10)
-#v20, = plt.plot(values_20)
-#v30, = plt.plot(values_30)
+# for scale
+scaler = []
+for i in range(min_size, max_size+1, increment):
+    scaler.append(i)
+
+vs , = plt.plot(scaler, values_s )
+ve , = plt.plot(scaler, values_e)
+v10, = plt.plot(scaler, values_10)
+v20, = plt.plot(scaler, values_20)
+v30, = plt.plot(scaler, values_30)
 #v40, = plt.plot(values_40)
 #v50, = plt.plot(values_50)
-v60, = plt.plot(values_60)
-ve , = plt.plot(values_e )
+#v60, = plt.plot(values_60)
 
+
+plt.xlabel('graph size')
 plt.yscale('log', base=2)
-plt.ylabel('some numbers')
+plt.ylabel('runtime in seconds')
 
-plt.xlim(min_size-1, max_size)
+plt.xlim(min_size, max_size)
 #plt.xlim(10, 35)
 #plt.xlim(10, 16)
 # plt.ylim(plt.ylim())
 
 vs.set_label('schuster')
-#v10.set_label('schuster (h=10)')
-#v20.set_label('schuster (h=20)')
-#v30.set_label('schuster (h=30)')
+v10.set_label('schuster (h=10)')
+ve.set_label('eppstein')
+v20.set_label('schuster (h=20)')
+v30.set_label('schuster (h=30)')
 #v40.set_label('schuster (h=40)')
 #v50.set_label('schuster (h=50)')
-v60.set_label('schuster (h=60)')
-ve.set_label('eppstein')
+#v60.set_label('schuster (h=60)')
+
 plt.legend()
+
+plt.savefig('out.pdf')
 
 plt.show()

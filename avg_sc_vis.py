@@ -20,12 +20,15 @@ while True:
         break
 
 # avg values (assuming 10 runs)
-for i in range(0, len(values)):
-    values[i] = values[i]/200
+#for i in range(0, len(values)):
+#    values[i] = values[i]/200
 
 # for v in values:
 #    print(v)
 plt.plot(values)
-plt.ylabel('some numbers')
+plt.ylabel('6-cycle branches')
+plt.xlabel('instance size')
 
+
+plt.savefig('avg.pdf')
 plt.show()
