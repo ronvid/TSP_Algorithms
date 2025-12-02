@@ -1,5 +1,9 @@
 import matplotlib.pyplot as plt
 
+#
+# This script is for visualizing the amount of 6-cycles in the testgraphs (given that they have been tracked)
+#
+
 values = []
 for i in range(0,100):
     values.append(0)
@@ -19,12 +23,7 @@ while True:
     else:
         break
 
-# avg values (assuming 10 runs)
-#for i in range(0, len(values)):
-#    values[i] = values[i]/200
 
-# for v in values:
-#    print(v)
 plt.plot(values)
 plt.ylabel('6-cycle branches')
 plt.xlabel('instance size')

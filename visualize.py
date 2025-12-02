@@ -1,11 +1,17 @@
 import matplotlib.pyplot as plt
 
+#
+# This script is for visualizing the rutimes of the different algorithms and saves it as out.pdf
+# This file needs some manual setting up
+#
+
 e_values = []
 s_values = []
 snh_values = []
 
-path = "results/high_choice_hh/"
+path = "results/high_choice_hh/" # path where the test results are saved
 
+# information about the tests
 min_size = 6
 max_size = 66
 increment = 6
@@ -78,7 +84,7 @@ plt.ylabel('runtime in seconds')
 
 plt.xlim(min_size, max_size)
 
-
+# setting the names of the values
 s.set_label('schuster')
 snh.set_label('schuster (largest 6-cycle)')
 e.set_label('eppstein')
