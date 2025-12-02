@@ -13,15 +13,14 @@
 #include "GraphUtility.hpp"
 
 #include <stdexcept>
-#include <iostream> // TODO remove
 
 namespace Schuster{
 
 /**
- * This is a C++ version of David Eppsteins Implementation of Eppsteins Algorithm for finding
- * hamiltonian cycles and a solution to the Traveling Salesman Problem in Cubic Graph
+ * This is a C++ version of Martin Schuster's modification of David Eppstein's implementation of Eppsteins algorithm for finding hamiltonian cycles and a solution to the traveling salesman problem in cubic graph as proposed in:
+ * "A New Upper Bound for the Traveling Salesman Problem in Cubic Graphs"
  *
- * Restrictions
+ * Restrictions:
  * Vertices should have values >= 0
  */
 
@@ -73,7 +72,7 @@ std::vector<std::function<bool()>> actions;
 int get_unforced_neighbour(int v);
 
 // set of six cycles (represented as sets)
-std::set<std::set<int>> six_cycles; // TODO mabe six cycle as unordered set
+std::set<std::set<int>> six_cycles;
 
 std::function<bool()> main_ch = []{
     //std::cout << "main" << std::endl;
@@ -224,13 +223,7 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
     }
 
     *cost = min_found_weight;
-    if(six_cycles.size() != 0){
-        // debug assertion TODO remove!
-        print_graph(&forced_in_current);
-        std::cout << " ----- " << std::endl;
-        print_graph(&G);
-        throw std::invalid_argument("Search returned with more than 0 sc's -> cleanup error"); // TODO remove or something
-    }
+
     return cycle_found;
 }
 
@@ -311,7 +304,6 @@ bool remove_third_leg(int v){
     return safely_remove(v, w);
 }
 
-// TODO maybe needs a check if the edge even exists
 bool force(int v, int w){
     //std::cout << "force: " << v << " " << w << std::endl;
     // add edge v-w to forced edges
@@ -480,11 +472,6 @@ int get_unforced_neighbour(int v){
             return (*i).first;
         }
     }
-    // TODO maybe assertion here
-    print_graph(&forced_in_current);
-    std::cout << " ----- " << std::endl;
-    print_graph(&G);
-    throw std::invalid_argument( " unforced neighbour returned -1"); // TODO remove or something
     return -1;
 }
 
@@ -518,7 +505,7 @@ bool check_for_six_cycle(int v){
                     //std::cout << "SC found: " << v << " " << w << " " << x << " " << y << " " << z << " " << u << std::endl;
                     // try to insert six cycle to list
                     std::set<int> sc = {v,w,u,x,y,z};
-                    if(sc.size() != 6) continue; // should not be nessaccary (since checks in conditionals) (maybe check whats better TODO)
+                    if(sc.size() != 6) continue;
                     if(six_cycles.insert(sc).second){
                         // if six cycle can be inserted
                         //std::cout << "SC inserted: " << v << " " << w << " " << x << " " << y << " " << z << " " << u << std::endl;
@@ -542,7 +529,6 @@ void remove_six_cycle_vertices(int v, int w){
     //std::cout << "remove sc: " << v << " " << w << std::endl;
     // check if both given vertices are part of a six cycle, remove six_cycle if they are
 
-    // worst case: runs size * (deleted elements +1) times, maybe find a better way TODO
     for(std::set<std::set<int>>::iterator sc = six_cycles.begin(); sc != six_cycles.end();){
         //std::cout << "it " << six_cycles.size() << std::endl;
         if((*sc).contains(v) && (*(sc)).contains(w)){
@@ -576,7 +562,6 @@ void remove_six_cycle_vertices(int v){
     //std::cout << "remove sc: " << v << std::endl;
     // check if the given vertex is part of a six cycle, remove six_cycle if it is
 
-    // worst case: runs size * (deleted elements +1) times, maybe find a better way TODO https://en.cppreference.com/w/cpp/container/set/erase.html
     for(std::set<std::set<int>>::iterator sc = six_cycles.begin(); sc != six_cycles.end();){
         //std::cout << "it " << six_cycles.size() << std::endl;
         if((*sc).contains(v)){

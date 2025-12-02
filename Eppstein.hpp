@@ -382,6 +382,7 @@ int get_unforced_neighbour(int v){
             return (*i).first;
         }
     }
+    return -1;
 }
 
 }

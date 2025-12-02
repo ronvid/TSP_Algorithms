@@ -6,6 +6,10 @@
 #include <iostream>
 #include <fstream>
 
+/*
+ * Utility functions that are useful for modifying graphs (eazy edge adding, deleting the graph) and debugging (printing to console/to svg)
+ */
+
 // adds an edge between v and w with cost c
 // since the graph structure does not allow parallel edges, the edge with the smaller cost will be used
 void add_edge(std::unordered_map<int, std::unordered_map<int, int>>* W, int v, int w, int c);

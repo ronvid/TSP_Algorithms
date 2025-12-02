@@ -1,5 +1,5 @@
-#ifndef SCHUSTER_NEW_HEURISTIC_HPP
-#define SCHUSTER_NEW_HEURISTIC_HPP
+#ifndef SCHUSTER_HIGH_CHOICE_HPP
+#define SCHUSTER_HIGH_CHOICE_HPP
 
 #include <map>
 #include <set>
@@ -13,13 +13,14 @@
 #include "GraphUtility.hpp"
 
 #include <stdexcept>
-#include <iostream> // TODO remove
 
-namespace Schuster_New_Heuristic{
+namespace Schuster_High_Choice{
 
 /**
  * This is a C++ version of David Eppsteins Implementation of Eppsteins Algorithm for finding
  * hamiltonian cycles and a solution to the Traveling Salesman Problem in Cubic Graph
+ *
+ * This heuristic only saved the 6-cycle with the most adjacent edges in F
  *
  * Restrictions
  * Vertices should have values >= 0
@@ -41,8 +42,6 @@ void remove_six_cycle_vertices(int v, int w);
 void remove_six_cycle_vertices(int v);
 
 bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weights, std::unordered_map<int, std::unordered_map<int, bool>>* forced_edges, int* cost);
-
-//void print_graph(std::map<int, std::map<int, bool>>* G);
 
 // a copy of the given graph to run the algorithm on
 std::unordered_map<int, std::unordered_map<int, bool>> G;
@@ -73,11 +72,10 @@ std::vector<std::function<bool()>> actions;
 int get_unforced_neighbour(int v);
 
 
-std::set<int>* six_cycle; // TODO mabe six cycle as unordered set
+std::set<int>* six_cycle;
 int six_cycle_forced;
 
 std::function<bool()> main_ch = []{
-    //std::cout << "main" << std::endl;
     // main event dispatcher
     // returns true if a hamiltonian cycle was found, otherwise false
 
@@ -85,20 +83,11 @@ std::function<bool()> main_ch = []{
         return handle_degree_two();
     }
 
-    // open file and write number of 6c (TODO remove)
-    // if(six_cycles.size() > 0){
-    //     std::ofstream file;
-    //     file.open (".six_cycles.txt", std::ios::out | std::ios::app);
-    //     file << G.size() << "\n";
-    //     file.close();
-    // }
-
     // Now every vertex is degree three and forced edges form a matching
     // pick edge for rcursive search (optimaly one that is adjacent to a forced edge)
     int v = -1;
     int w = -1;
     if(forced_vertices.size() > 0){
-        //std::cout << "forced: " << forced_vertices.size() << " sc: " << six_cycles.size() << std::endl;
         // pick edge from a six cycle
         if(six_cycle != nullptr){
 
@@ -112,18 +101,15 @@ std::function<bool()> main_ch = []{
 
             // unforced neighbour of the found vertex
             w = get_unforced_neighbour(v);
-            //std::cout << "sub w: " << w << std::endl;
         }
         // pick an unforced edge, next to a forced edge
         else{
             v = (*forced_vertices.begin()).first;
             w = get_unforced_neighbour(v);
-            //std::cout << "basic forced: " << v << " " << w << std::endl;
         }
     }
     // pick any edge
     else{
-        //std::cout << "no forced!" << std::endl;
         v = (*G.begin()).first;
         w = get_unforced_neighbour(v);
     }
@@ -210,11 +196,11 @@ bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, in
     }
 
     *cost = min_found_weight;
+
     return cycle_found;
 }
 
 void remove(int v, int w, bool check_sc){
-    //std::cout << "remove: " << v << " " << w << std::endl;
     // removes edge v-w from G
     bool was_original = G[v][w];
     G[v].erase(w);
@@ -237,7 +223,6 @@ void remove(int v, int w, bool check_sc){
     }
 
     std::function<bool()> unremove = [v, w, was_original, was_forced, weight]{
-        //std::cout << "unremove: " << v << " " << w << std::endl;
         G[v][w] = G[w][v] = was_original;
         if(was_forced){
             forced_in_current[v][w] = forced_in_current[w][v] = true;
@@ -251,12 +236,10 @@ void remove(int v, int w, bool check_sc){
 }
 
 void now_degree_two(int v){
-    //std::cout << "now_degree_two: " << v << std::endl;
     // changing G caused v's degree to become two
     degree_two.push_back(v);
 
     std::function<bool()> not_degree_two = [v]{
-        //std::cout << "not_degree_two: " << v << std::endl;
         degree_two.pop_back();
         return false;
     };
@@ -264,7 +247,6 @@ void now_degree_two(int v){
 }
 
 bool safely_remove(int v, int w){
-    //std::cout << "safely_remove: " << v << " " << w << std::endl;
     // remove edge v-w and update degree data list
     // return true if successful, otherwise false
     if(forced_in_current[v].contains(w) || G[v].size() < 3 || G[w].size() < 3){
@@ -277,7 +259,6 @@ bool safely_remove(int v, int w){
 }
 
 bool remove_third_leg(int v){
-    //std::cout << "remove_third_leg: " << v << std::endl;
     // if v has two forced edges -> remove third unforced edge
     // returns true if successful, otherwise false
     if(G[v].size() != 3 || forced_in_current[v].size() != 2){
@@ -290,9 +271,7 @@ bool remove_third_leg(int v){
     return safely_remove(v, w);
 }
 
-// TODO maybe needs a check if the edge even exists
 bool force(int v, int w){
-    //std::cout << "force: " << v << " " << w << std::endl;
     // add edge v-w to forced edges
     // return true if successful, otherwise false
     if(forced_in_current[v].contains(w)){
@@ -325,7 +304,6 @@ bool force(int v, int w){
     check_for_six_cycle(w);
 
     std::function<bool()> unforce = [v, w, was_original, v_not_previously_forced, w_not_previously_forced, weight]{
-        //std::cout << "unforce: " << v << " " << w << std::endl;
         if(v_not_previously_forced) forced_vertices.erase(v);
         if(w_not_previously_forced) forced_vertices.erase(w);
 
@@ -347,7 +325,6 @@ bool force(int v, int w){
 }
 
 bool force_into_triangle(int v, int w){
-    //std::cout << "force_into_triangle: " << v << " " << w << std::endl;
     // after v-w was forced, check if w belongs to a triangle -> force opposite edge
     if(G[w].size() != 3){
         return true;
@@ -367,7 +344,6 @@ bool force_into_triangle(int v, int w){
 }
 
 bool contract(int v){
-    //std::cout << "contract: " << v << std::endl;
     // remove degree two vertex v
     // returns true if cycle should be reported, otherwise false
     // appends recursive search of contracted graph to action stack
@@ -408,7 +384,6 @@ bool contract(int v){
     W.erase(v);
 
     std::function<bool()> uncontract = [v, u, w]{
-        //std::cout << "uncontract: " << v << " " << w << " " << u << std::endl;
         G[u].erase(w);
         G[w].erase(u);
         forced_in_current[u].erase(w);
@@ -434,7 +409,6 @@ bool contract(int v){
 }
 
 bool handle_degree_two(){
-    //std::cout << "handle_degree_two" << std::endl;
     // handles case that degree two vertices exist
     // return true if cycle was found, otherwise false
 
@@ -451,7 +425,6 @@ bool handle_degree_two(){
 }
 
 int get_unforced_neighbour(int v){
-    //std::cout << "get_unforced_neighbour: " << v << std::endl;
     // returns an unforced neighbour to v
     // not originaly a function in Eppsteins implementation
     for(std::unordered_map<int, bool>::iterator i = G[v].begin(); i != G[v].end(); i++){
@@ -459,16 +432,10 @@ int get_unforced_neighbour(int v){
             return (*i).first;
         }
     }
-    // TODO maybe assertion here
-    print_graph(&forced_in_current);
-    std::cout << " ----- " << std::endl;
-    print_graph(&G);
-    throw std::invalid_argument( " unforced neighbour returned -1"); // TODO remove or something
     return -1;
 }
 
 bool check_for_six_cycle(int v){
-    //std::cout << "check sc: " << v << std::endl;
     // check if v is part of a six cycle
 
     // check that no six cycle was already found
@@ -496,7 +463,6 @@ bool check_for_six_cycle(int v){
 
                 // check if z and u are unforced neighbours -> six cycle found
                 if(u != y && G[z].contains(u) && !forced_in_current[z].contains(u)){
-                    //std::cout << "SC found: " << v << " " << w << " " << x << " " << y << " " << z << " " << u << std::endl;
                     // add the six cycle
                     std::set<int>* sc = new std::set<int>({v,w,u,x,y,z});
                     if(sc->size() != 6){
@@ -521,11 +487,7 @@ bool check_for_six_cycle(int v){
                     six_cycle = sc;
                     six_cycle_forced = sc_forced;
 
-                    //std::cout << "SC inserted: " << v << " " << w << " " << x << " " << y << " " << z << " " << u << std::endl;
                     std::function<bool()> uninsert_six_cycle = [old_sc, old_sc_forced]{
-                        //std::cout << "uninsert " << six_cycles.size() << ": "<< std::endl;
-                        //for(int i : sc) std::cout << i << " ";
-                        //std::cout << std::endl;
                         delete six_cycle;
                         six_cycle = old_sc;
                         six_cycle_forced = old_sc_forced;
