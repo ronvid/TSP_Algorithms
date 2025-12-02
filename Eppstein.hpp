@@ -15,10 +15,10 @@
 namespace Eppstein{
 
 /**
- * This is a C++ version of David Eppsteins Implementation of Eppsteins Algorithm for finding
- * hamiltonian cycles and a solution to the Traveling Salesman Problem in Cubic Graph
+ * This is a C++ version of David Eppsteins implementation of his algorithm for finding hamiltonian cycles and a solution to the Traveling Salesman Problem in cubic graphs described in his paper:
+ * "The Traveling Salesman Problem for Cubic Graphs"
  *
- * Restrictions
+ * Restrictions:
  * Vertices should have values >= 0
  */
 
@@ -34,7 +34,6 @@ bool handle_degree_two();
 
 bool ShortestHamiltonianCycle(std::unordered_map<int, std::unordered_map<int, int>>* input_weights, std::unordered_map<int, std::unordered_map<int, bool>>* forced_edges, int* cost);
 
-//void print_graph(std::map<int, std::map<int, bool>>* G);
 
 // a copy of the given graph to run the algorithm on
 std::unordered_map<int, std::unordered_map<int, bool>> G;
@@ -383,12 +382,6 @@ int get_unforced_neighbour(int v){
             return (*i).first;
         }
     }
-    // TODO maybe assertion here
-    print_graph(&forced_in_current);
-    std::cout << " ----- " << std::endl;
-    print_graph(&G);
-    throw std::invalid_argument( " unforced neighbour returned -1"); // TODO remove or something
-    return -1;
 }
 
 }

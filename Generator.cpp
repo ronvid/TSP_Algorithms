@@ -6,6 +6,13 @@
 #include <fstream>
 #include <iostream>
 
+/*
+ * This file includes the code for generating the different graph classes described in the thesis
+ *     - random cycle graphs
+ *     - random regular graphs - by Steger and Wormald
+ *     - high-hamiltonian graphs - by Eppstein
+ */
+
 enum generation{
     RANDOM_CYCLE = 0,
     RANDOM_REGULAR = 1,
@@ -17,10 +24,13 @@ void random_regular(std::unordered_map<int, std::unordered_map<int, int>>* W, in
 void high_hamiltonian(std::unordered_map<int, std::unordered_map<int, int>>* W, int n, int max_cost);
 
 int get_bounded_random(int max){
+    // returns a random number between [0,max)
     return (rand() % max);
 }
 
 void write_seed_to_file(int seed, int size){
+    // writes the seed and size of the graph to a file, for easier debugging
+
     std::ofstream seed_file;
     seed_file.open(".last_seed.txt");
     seed_file << seed << "/" << size << "\n";
@@ -28,8 +38,8 @@ void write_seed_to_file(int seed, int size){
 }
 
 std::unordered_map<int, std::unordered_map<int, int>>* generate_random_graph(int n, int seed, int type){
-    // takes two random edges and connectes them
-    // does not create parallel edges and self loops
+    // generates random graphs, based on the size, seed and kind of graph class provided
+    // the weights of the edges will be between 0 and 9 (inclusive)
 
     std::srand(seed);
 
@@ -86,8 +96,8 @@ void random_cycle(std::unordered_map<int, std::unordered_map<int, int>>* W, int 
 }
 
 void random_regular(std::unordered_map<int, std::unordered_map<int, int>>* W, int n, int max_cost){
+    // creates a random regular graph, size has to be a multiple of two
 
-    // needs to be a multiple of two (TODO could also not be a multiple of two, then one vertex would be of degree 2)
     if(n%2 != 0) return;
 
     // create random regular graphs
@@ -210,14 +220,6 @@ begin:
 
     // add last pair to W
     add_edge(W, v, w, get_bounded_random(max_cost));
-
-    // check if the graph was constructed correctly (TODO remove this)
-    for(const auto& [v, e] : (*W)){
-        if(e.size() != 3){
-            std::cout << "Not deg3 !!" << std::endl;
-            while(true){;}
-        }
-    }
 }
 
 void high_hamiltonian(std::unordered_map<int, std::unordered_map<int, int>>* W, int n, int max_cost){

@@ -7,6 +7,11 @@
 #include <vector>
 #include <climits>
 
+/*
+ * A Bruteforce algorithm for the travelling salesman problem
+ * This algorithm was not mentioned in the thesis itself and only used for testing and easy verification of the correctness of the other algorithms
+ */
+
 namespace Bruteforce{
 
 void recursive_bruteforce(int v);
