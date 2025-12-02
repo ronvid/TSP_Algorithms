@@ -84,14 +84,6 @@ std::function<bool()> main_ch = []{
         return handle_degree_two();
     }
 
-    // open file and write number of 6c (TODO remove)
-    // if(six_cycles.size() > 0){
-    //     std::ofstream file;
-    //     file.open (".six_cycles.txt", std::ios::out | std::ios::app);
-    //     file << G.size() << "\n";
-    //     file.close();
-    // }
-
     // Now every vertex is degree three and forced edges form a matching
     // pick edge for rcursive search (optimaly one that is adjacent to a forced edge)
     int v = -1;
